@@ -89,7 +89,7 @@ function player.GetZSBots()
 	local zsbots = {  }
 
 	for i, bot in ipairs(player.GetBots()) do
-		if bot.IsZSBot then
+		if bot.IsZSBot2 then
 			table.insert( zsbots, bot )
 		end
 	end
@@ -581,24 +581,37 @@ function CreateZSBot( name )
 			name = table.Random( names )
 		end
 		
+		--CREATE THE BOT
 		ply = player.CreateNextBot( name )
 		
-		ply.IsZSBot = true
+		ply.IsZSBot2 = true
+		
+		--FUNCTION DELAYS
 		ply.targetFindDelay = CurTime()
+		
+		--TIMERS
 		ply.guardTimer = math.random( 5, 10 )
 		ply.runAwayTimer = 0
-		--ply.rotationUpdateDelay = CurTime()
-
+		ply.newPointTimer = 15
+		--ply.lookAroundTimer = 0
+		--ply.rotationTimer = 0
+		
+		--BOT NAVIGATOR
 		ply.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
 		ply.FollowerEnt:Spawn()
 		ply.FollowerEnt.Bot = ply
 		
+		--OTHER STUFF
 		ply.LastPath = nil
 		ply.attackProp = nil
 		ply.lookProp = nil
 		ply.lookPos = nil
 		ply.lastWeapon = nil
 		ply.heldProp = nil
+		ply.strafeType = -1 --0 = left, 1 = right, 2 = back
+		ply.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
+		ply.stopVel = 40
+		ply.canRaycast = true
 		
 		--ply.State = 0 --Idle, Hunt, MoveTo, Buy, Hide
 		--ply.stateName = "NONE"
@@ -612,15 +625,18 @@ function CreateZSBot( name )
 		ply.nearbyFriends = 0
 		ply.nearbyEnemies = 0
 		
+		--NAV AREAS
 		ply.DefendingSpots = {  }
 		ply.CadingSpots = {  }
 		ply.UnCheckableAreas = {  }
 		
+		--CHAT MESSAGES
 		ply.sayMessage = ""
 		ply.sayTeamMessage = ""
 		
 		ply.prevSay = -1
 		
+		--INPUT TIMERS
 		ply.canGetOffLadderTimer = true
 		ply.b = true
 		
@@ -639,30 +655,26 @@ function CreateZSBot( name )
 		ply.canDeployTimer = true
 		ply.deployTimer = false
 		
-		ply.canLookAroundTimer = true
-		ply.lookAroundTimer = false
-		
 		ply.canZoomTimer = true
 		ply.zoomTimer = false
 		
+		--INPUT VALUES
 		ply.attackHold = false
 		ply.attack2Hold = false
 		ply.jumpHold = false
 		ply.crouchHold = false
 		ply.useHold = false
 		ply.zoomHold = false
-		ply.strafeType = -1 --0 = left, 1 = right, 2 = back
-		ply.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
-		ply.stopVel = 40
-		ply.canRaycast = true
 		
 		ply.shouldGoOutside = false
 		ply.canShouldGoOutside = true
 		
+		--SMOOTH ROTATION
 		ply.lookAngle = Angle(0, 0, 0)
 		ply.rotationSpeed = 5 -- was 10
 		ply.angle = Angle(0, 0, 0)
 		
+		--DO STUFF ON SPAWN LIKE CHOOSING LOADOUTS, CHANGING CLASS, ETC
 		DoSpawnStuff( ply, false )
 	else
 		MsgC( Color( 255, 255, 255 ), "Failed to create ZSBot.\n" )
@@ -715,28 +727,28 @@ concommand.Add( "zs_bot_kick", function ( ply, cmd, args, argStr )
 	if canDo then
 		if argStr == "All" or argStr == "all" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot then
+				if bot:IsBot() and bot.IsZSBot2 then
 					bot:Kick()
 				end
 			end
 		end
 		if argStr == "Humans" or argStr == "humans" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot and bot:Team() == 4 then
+				if bot:IsBot() and bot.IsZSBot2 and bot:Team() == 4 then
 					bot:Kick()
 				end
 			end
 		end
 		if argStr == "Zombies" or argStr == "zombies" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot and bot:Team() == TEAM_UNDEAD then
+				if bot:IsBot() and bot.IsZSBot2 and bot:Team() == TEAM_UNDEAD then
 					bot:Kick()
 				end
 			end
 		end
 		if argStr != "Zombies" and argStr != "zombies" and argStr != "Humans" and argStr != "humans" and argStr != "All" and argStr != "all" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot and bot:Name() == argStr then
+				if bot:IsBot() and bot.IsZSBot2 and bot:Name() == argStr then
 					bot:Kick()
 				end
 			end
@@ -761,28 +773,28 @@ concommand.Add( "zs_bot_kill", function ( ply, cmd, args, argStr )
 	if canDo then
 		if argStr == "All" or argStr == "all" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot and bot:Alive() then
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() then
 					bot:Kill()
 				end
 			end
 		end
 		if argStr == "Humans" or argStr == "humans" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot and bot:Alive() and bot:Team() == 4 then
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Team() == 4 then
 					bot:Kill()
 				end
 			end
 		end
 		if argStr == "Zombies" or argStr == "zombies" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot and bot:Alive() and bot:Team() == TEAM_UNDEAD then
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Team() == TEAM_UNDEAD then
 					bot:Kill()
 				end
 			end
 		end
 		if argStr != "Zombies" and argStr != "zombies" and argStr != "Humans" and argStr != "humans" and argStr != "All" and argStr != "all" then
 			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot and bot:Alive() and bot:Name() == argStr then
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Name() == argStr then
 					bot:Kill()
 				end
 			end
@@ -1069,6 +1081,7 @@ end
 function DoSpawnStuff( ply, changeClass )
 	ply.Task = -1
 	ply.moveType = -1
+	ply.newPointTimer = 15
 	ply.runAwayTimer = 0
 	
 	if ply:Team() != TEAM_UNDEAD then

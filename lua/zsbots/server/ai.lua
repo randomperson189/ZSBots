@@ -1,5 +1,5 @@
 function controlBots ( bot, cmd )
-	if !bot.IsZSBot then return end
+	if !bot.IsZSBot2 then return end
 	
 	cmd:ClearMovement()
 	cmd:ClearButtons()
@@ -34,14 +34,14 @@ function controlBots ( bot, cmd )
 			
 			curWep = bot:GetActiveWeapon()
 			
-			if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and curWep.Base != "weapon_zs_basemelee" or curWep.Base == "weapon_zs_basemelee" then	
+			if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee then	
 				if OtherWeaponWithAmmo(bot) != nil then
 					bot:SelectWeapon(OtherWeaponWithAmmo(bot))
 				end
 				
 				if OtherWeaponWithAmmo(bot) == nil then
 					for i, meleeWep in ipairs(bot:GetWeapons()) do 
-						if meleeWep.Base == "weapon_zs_basemelee" then
+						if meleeWep.IsMelee then
 							bot:SelectWeapon(meleeWep)
 							
 							break
@@ -238,7 +238,7 @@ function controlBots ( bot, cmd )
 	--print (#bot.DefendingSpots)
 	
 	if IsValid (bot:GetActiveWeapon()) and bot:Team() != TEAM_UNDEAD then
-		if bot:GetActiveWeapon():Clip1() <= 0 and bot:GetActiveWeapon().Base != "weapon_zs_basemelee" then
+		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee then
 			cmd:SetButtons (IN_RELOAD)
 		end
 	end
@@ -555,7 +555,7 @@ function controlBots ( bot, cmd )
 				
 				local myTarget = bot.FollowerEnt.Target
 				
-				if bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or bot:GetActiveWeapon().Base != "weapon_zs_basemelee" or bot:GetActiveWeapon():GetClass() == "weapon_zs_hammer" or !IsValid (myTarget) or myTarget:Health() <= 0 then
+				if bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or !bot:GetActiveWeapon().IsMelee or bot:GetActiveWeapon():GetClass() == "weapon_zs_hammer" or !IsValid (myTarget) or myTarget:Health() <= 0 then
 					--cmd:SetSideMove( 0 )
 					bot.Task = 1
 				end
@@ -800,7 +800,7 @@ function controlBots ( bot, cmd )
 			--bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(AimPoint( bot ))
 			
 			if IsValid (bot.FollowerEnt.Target) then
-				if bot:GetActiveWeapon().Base == "weapon_zs_basemelee" and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.Target:Health() > 0 then
+				if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.Target:Health() > 0 then
 					local mtr = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = AimPoint( bot ),
@@ -901,9 +901,9 @@ function controlBots ( bot, cmd )
 								--print ("running away" .. bot.runAwayTimer)
 								CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 								
-								if bot:GetActiveWeapon().Base != "weapon_zs_basemelee" then
+								if !bot:GetActiveWeapon().IsMelee then
 									for i, meleeWep in ipairs(bot:GetWeapons()) do 
-										if meleeWep.Base == "weapon_zs_basemelee" then
+										if meleeWep.IsMelee then
 											bot:SelectWeapon(meleeWep)
 											
 											break
@@ -920,7 +920,7 @@ function controlBots ( bot, cmd )
 					
 					if IsValid( bot:GetActiveWeapon() ) then
 						--print (bot.FollowerEnt.TargetCadingSpot)
-						if bot:GetActiveWeapon().Base != "weapon_zs_basemelee" then
+						if !bot:GetActiveWeapon().IsMelee then
 							bot.guardTimer = bot.guardTimer - FrameTime()
 							--print (bot.guardTimer)
 					
@@ -944,7 +944,7 @@ function controlBots ( bot, cmd )
 							end
 						end
 						
-						if curWep.Base == "weapon_zs_basemelee" then
+						if curWep.IsMelee then
 							if OtherWeaponWithAmmo(bot) == nil then
 								for i, wep in ipairs(bot:GetWeapons()) do
 									if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep.Base != "weapon_zs_basemelee" then
@@ -1168,8 +1168,11 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
 			if GAMEMODE:GetWave() == 0 and IsValid( bot.FollowerEnt.TargetArsenal ) then
+				bot.newPointTimer = 15
 				bot.Task = 1
 			end
+			
+			bot.newPointTimer = bot.newPointTimer - FrameTime()
 			
 			if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
 				local tr = util.TraceLine( {
@@ -1200,9 +1203,16 @@ function controlBots ( bot, cmd )
 				end
 			end
 			
-			if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):Distance( Vector( myTarget.x, myTarget.y, 0 ) ) < 20 then
+			if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):Distance( Vector( myTarget.x, myTarget.y, 0 ) ) < 20 or bot.newPointTimer <= 0 then
 				bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
 				bot.FollowerEnt:ComputePath (bot.FollowerEnt.P, myTarget)
+				
+				if bot.newPointTimer <= 0 and GetConVar( "zs_bot_debug" ):GetInt() != 0 then 
+					bot:Say("Took too long to get to point, going to new one.") 
+					bot:EmitSound( "buttons/button11.wav", 75, 100, 1, CHAN_AUTO )
+				end
+				
+				bot.newPointTimer = 15
 			end
 			
 			if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
@@ -1212,7 +1222,7 @@ function controlBots ( bot, cmd )
 					filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 				} )
 				
-				if bot:GetActiveWeapon().Base == "weapon_zs_basemelee" and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.Target:Health() > 0 then					
+				if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.Target:Health() > 0 then					
 					if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
 						bot.Task = 0
 					end
@@ -1265,9 +1275,9 @@ function controlBots ( bot, cmd )
 						--print ("running away" .. bot.runAwayTimer)
 						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
 						
-						if bot:GetActiveWeapon().Base != "weapon_zs_basemelee" then
+						if !bot:GetActiveWeapon().IsMelee then
 							for i, meleeWep in ipairs(bot:GetWeapons()) do 
-								if meleeWep.Base == "weapon_zs_basemelee" then
+								if meleeWep.IsMelee then
 									bot:SelectWeapon(meleeWep)
 									
 									break
@@ -1481,7 +1491,7 @@ function controlBots ( bot, cmd )
 						bot.b = true
 						
 						bot:LookatPosXY( cmd, myTarget )
-						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
+						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
 						
 						bot.heldProp:SetAngles(LerpAngle( 10 * FrameTime( ), bot.heldProp:GetAngles(), Angle(0,0,0) ))
 						
@@ -1831,6 +1841,10 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
+	--Task 13
+	--Humans: Follow
+	--Zombies: ...
+	
 	--Timer resets DO NOT REMOVE
 	if CurTime() > bot.targetFindDelay then
 		bot.targetFindDelay = CurTime() + 0.5
@@ -1839,15 +1853,15 @@ end
 hook.Add( "StartCommand", "controlBots", controlBots )
 
 function botDeath( ply )
-	if !ply.IsZSBot then return end
+	if !ply.IsZSBot2 then return end
 	
 	if GAMEMODE:GetWave() == 0 then return end
 	if ply:Team() != TEAM_UNDEAD and ply:GetZombieClassTable().Name == "Fresh Dead" then return end
-	
+	print("oof")
 	timer.Simple(3, function()
 		if !IsValid(ply) then return end
 		
-		if GAMEMODE:GetWaveActive() and ply:Health() <= 0 then
+		if GAMEMODE:GetWaveActive() and !ply:Alive() then
 			ply:RefreshDynamicSpawnPoint()
 			ply:UnSpectateAndSpawn()
 		end
@@ -1860,14 +1874,14 @@ end
 hook.Add( "PlayerDeath","botDeath",botDeath)
 
 function botDisconnect( ply )
-	if !ply.IsZSBot then return end
+	if !ply.IsZSBot2 then return end
 	
 	ply.FollowerEnt:Remove()
 end
 hook.Add( "PlayerDisconnected","botDisconnect",botDisconnect)
 
 function botSpawn( ply )
-	if !ply.IsZSBot then return end
+	if !ply.IsZSBot2 then return end
 	
 	DoSpawnStuff( ply, true )
 end
