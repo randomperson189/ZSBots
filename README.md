@@ -4,6 +4,19 @@ I'm making them as a spiritual successor to AZBot and D3Bot cause those ones are
 
 I started development on these ZSBots back in early 2018 and have been working on them ever since.
 
-to add a bot: zs_bot_add
+If the bots aren't moving then type nav_generate into the console.
 
-if the bots aren't moving then type nav_generate into the console
+ulx commands:
+!addzsbot
+!kickzsbots
+!slayzsbots
+!zsbotsay
+
+console commands:
+zs_bot_add
+zs_bot_kick
+zs_bot_kill
+
+console variables:
+zs_bot_can_cade
+zs_bot_can_pick_up_loot
