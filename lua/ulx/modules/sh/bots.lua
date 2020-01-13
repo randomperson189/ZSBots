@@ -1,7 +1,7 @@
 local CATEGORY_NAME = "ZS Bots"
 
 --Add ZS Bot--
-function ulx.addzsbots( calling_ply, amount, name )
+function ulx.addzsbot( calling_ply, amount, name )
 	if amount <= 1 then
 		amount = 1
 	end
@@ -14,11 +14,11 @@ function ulx.addzsbots( calling_ply, amount, name )
 	
 	ulx.fancyLogAdmin( calling_ply, "#A added #i ZS Bots.", amount, name )
 end
-local addzsbots = ulx.command( CATEGORY_NAME, "ulx addzsbots", ulx.addzsbots, "!addzsbots" )
-addzsbots:addParam{ type = ULib.cmds.NumArg, min = 1, default = 1, hint = "Amount", ULib.cmds.optional}
-addzsbots:addParam{ type = ULib.cmds.StringArg, hint = "Name", ULib.cmds.optional}
-addzsbots:defaultAccess(ULib.ACCESS_ADMIN)
-addzsbots:help( "Adds a ZS Bot." )
+local addzsbot = ulx.command( CATEGORY_NAME, "ulx addzsbot", ulx.addzsbot, "!addzsbot" )
+addzsbot:addParam{ type = ULib.cmds.NumArg, min = 1, default = 1, hint = "Amount", ULib.cmds.optional}
+addzsbot:addParam{ type = ULib.cmds.StringArg, hint = "Name", ULib.cmds.optional}
+addzsbot:defaultAccess(ULib.ACCESS_ADMIN)
+addzsbot:help( "Adds a ZS Bot." )
 
 --Kick ZS Bots--
 function ulx.kickzsbots( calling_ply, amount, should_kickall )
