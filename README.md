@@ -7,16 +7,16 @@ I started development on these ZSBots back in early 2018 and have been working o
 If the bots aren't moving then type nav_generate into the console.
 
 ulx commands:
-!addzsbot
-!kickzsbots
-!slayzsbots
+!addzsbot, 
+!kickzsbots, 
+!slayzsbots, 
 !zsbotsay
 
 console commands:
-zs_bot_add
-zs_bot_kick
+zs_bot_add, 
+zs_bot_kick, 
 zs_bot_kill
 
 console variables:
-zs_bot_can_cade
+zs_bot_can_cade, 
 zs_bot_can_pick_up_loot
