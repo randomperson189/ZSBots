@@ -10,11 +10,11 @@ ulx commands:
 !slayzsbots, 
 !zsbotsay
 
-console commands:
+console commands (SERVER ONLY):
 zs_bot_add, 
 zs_bot_kick, 
 zs_bot_kill
 
-console variables:
+console variables (SERVER ONLY):
 zs_bot_can_cade, 
 zs_bot_can_pick_up_loot
