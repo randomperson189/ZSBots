@@ -1,6 +1,5 @@
 # ZSBots
 These are Bots I'm making for the Garry's Mod Zombie Survival gamemode.
-I'm making them as a spiritual successor to AZBot and D3Bot cause those ones aren't really that great.
 
 If the bots aren't moving then type 'nav_generate' into the console.
 
