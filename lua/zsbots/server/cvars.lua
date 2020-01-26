@@ -1,4 +1,5 @@
-CreateConVar( "zs_bot_debug", 0, FCVAR_SERVER_CAN_EXECUTE, "Debug ZSBots" )
+CreateConVar( "zs_bot_debug", 0, FCVAR_SERVER_CAN_EXECUTE, "Debug ZSBots." )
+CreateConVar( "zs_bot_debug_nav", 0, FCVAR_SERVER_CAN_EXECUTE, "Debug ZSBots navigation." )
 --CreateConVar( "zs_bot_quota", 0, FCVAR_SERVER_CAN_EXECUTE, "Description here" )
 --CreateConVar( "zs_bot_say", "", FCVAR_SERVER_CAN_EXECUTE, "Display bot message." )
 --CreateConVar( "zs_bot_say_team", "", FCVAR_SERVER_CAN_EXECUTE, "Display bot message to team." )

@@ -9,7 +9,7 @@ function ENT:Initialize()
 	self:SetNoDraw( true )
 	self:SetSolid( SOLID_NONE )
 	self.Bot = nil
-	self.Target = nil
+	self.TargetEnemy = nil
 	self.TargetArsenal = nil
 	self.TargetResupply = nil
 	self.TargetTeammate = nil
@@ -33,14 +33,14 @@ function ENT:ChasePos( options )
 		if self.P:GetAge() > 1 and self.Bot:Health() > 0 then
 			
 			if self.Bot:GetZombieClassTable().Name != "Crow" then
-				if IsValid( self.Target ) and self.Bot.Task == 0 then
-					self:ComputePath (self.P, self.Target:GetPos())
+				if IsValid( self.TargetEnemy ) and self.Bot.Task == 0 then
+					self:ComputePath (self.P, self.TargetEnemy:GetPos())
 				end
 				
 				if self.Bot.Task == 1 then
 					if self.Bot:Team() != TEAM_UNDEAD then
 						if IsValid( self.TargetArsenal ) then
-							if self.Bot:GetPos():Distance( self.TargetArsenal:GetPos() ) > 100 then
+							if self.Bot:GetPos():Distance( self.TargetArsenal:GetPos() ) > 200 then
 								self:ComputePath (self.P, self.TargetArsenal:GetPos())
 							end
 						end
@@ -51,8 +51,10 @@ function ENT:ChasePos( options )
 					end
 				end
 				
-				if IsValid( self.TargetTeammate ) and self.Bot.Task == 2 then
-					self:ComputePath (self.P, self.TargetTeammate:GetPos())
+				if IsValid( self.TargetTeammate ) then 
+					if self.Bot.Task == 2 or self.Bot.Task == 12 then
+						self:ComputePath (self.P, self.TargetTeammate:GetPos())
+					end
 				end
 				
 				if self.TargetPosition != nil then

@@ -1,16 +1,394 @@
-TASK_TEST_ONE = 1
-TASK_TEST_TWO = 2
+TASK_MELEE_ZOMBIES = 0
+TASK_GOTO_HUMANS = 0
+TASK_GOTO_ARSENAL = 1
+TASK_HIDE_FROM_HUMANS = 1
+TASK_HEAL_TEAMMATE = 2
+TASK_PLACE_RESUPPLY = 3
+TASK_WANDER_AROUND = 4
+TASK_REPAIR_CADES = 5
+TASK_PICKUP_CADING_PROP = 6
+TASK_MAKE_CADE = 7
+TASK_RESUPPLY_AMMO = 8
+TASK_PICKUP_LOOT = 9
+TASK_DEFEND_CADE = 10
+TASK_SNIPING = 11
+TASK_FOLLOW = 12
+TASK_SPAWNKILL_ZOMBIES = 13
 
-function SayPresetMessage(bot, category, teamOnly, target)
+DISP_IGNORE_ENEMIES = 0
+DISP_ENGAGE_AND_INVESTIGATE = 1
+DISP_OPPORTUNITY_FIRE = 2
+DISP_SELF_DEFENSE = 3
+
+MSG_MEDIC = 0
+MSG_BOSS_OUTSIDE = 1
+
+defaultLookDistance = 1000
+defaultEscapeLookDistance = math.huge
+defaultRotationSpeed = 5 -- was 10
+
+local plymeta = FindMetaTable("Player")
+if not plymeta then return end
+
+local entmeta = FindMetaTable("Entity")
+if not entmeta then return end
+
+function plymeta:DispositionCheck( cmd, enemy )
+	if self.Disposition == 0 --[[IGNORE ENEMIES]] or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
+	
+	local tr = util.TraceLine( {
+		start = self:EyePos(),
+		endpos = self:AimPoint( self.FollowerEnt.TargetEnemy ),
+		filter = function( ent ) if ( ent != self.FollowerEnt.TargetEnemy and ent != self and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+	} )
+	
+	if self.Disposition == 1 then --ENGAGE_AND_INVESTIGATE
+		if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= self.lookDistance then
+			if !tr.Hit then
+				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
+				
+				ShootAtTarget( self )
+			end
+		else
+			--print ("oofy oof oof")
+		end
+	elseif self.Disposition == 2 then --OPPORTUNITY_FIRE
+		if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= self.lookDistance then
+			if !tr.Hit then
+				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
+				
+				if self.Skill > 25 and IsValid(self:GetActiveWeapon()) then
+					if self:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() then
+						self.attack2Hold = true
+					end
+				end
+				
+				ShootAtTarget( self )
+			end
+		else
+			--print ("oofy oof oof")
+		end
+	elseif self.Disposition == 3 then --SELF_DEFENSE
+		
+	end
+end
+
+function plymeta:InputTimers()
+	if IsValid(self:GetActiveWeapon()) then
+		if self.canAttackTimer then
+			if self.attackTimer then
+				local wep = self:GetActiveWeapon()
+				self.canAttackTimer = false
+				
+				self.attackHold = true
+				
+				if wep.Primary.Automatic then
+					timer.Simple (0.01, function()
+					if !IsValid (self) then return end
+						self.attackTimer = false
+						self.canAttackTimer = true
+					end)
+				else
+					timer.Simple (0.1, function()
+						if !IsValid (self) then return end
+						self.attackTimer = false
+						self.canAttackTimer = true
+					end)
+				end
+			end
+		end
+	else
+		self.attackTimer = false
+	end
+	
+	if self.canZoomTimer then
+		if self.zoomTimer then
+			self.canZoomTimer = false
+			
+			self.zoomHold = true
+			
+			timer.Simple (0, function()
+				if !IsValid (self) then return end
+				self.zoomHold = false
+				timer.Simple (0.2, function()
+					if !IsValid (self) then return end
+					self.zoomTimer = false
+					self.canZoomTimer = true
+				end)
+			end)
+		end
+	end
+	
+	if self.canUseTimer then
+		if self.useTimer then
+			self.canUseTimer = false
+			
+			self.useHold = true
+			
+			
+			timer.Simple (0, function()
+				if !IsValid (self) then return end
+				self.useHold = false
+				timer.Simple (0.2, function()
+					if !IsValid (self) then return end
+					self.useTimer = false
+					self.canUseTimer = true
+				end)
+			end)
+		end
+	end
+	
+	if self.canAttack2Timer then
+		if self.attack2Timer then
+			self.canAttack2Timer = false
+			
+			self.attack2Hold = true
+			
+			
+			timer.Simple (0, function()
+				if !IsValid (self) then return end
+				self.attack2Hold = false
+				timer.Simple (0.1, function()
+					if !IsValid (self) then return end
+					self.attack2Timer = false
+					self.canAttack2Timer = true
+				end)
+			end)
+		end
+	end
+	
+	if self.canDeployTimer then
+		if self.deployTimer then
+			self.canDeployTimer = false
+			
+			self.lookAngle = Angle (70, self:EyeAngles().y, self:EyeAngles().z)
+			self.crouchHold = true
+			timer.Simple (0.75, function()
+				if !IsValid (self) then return end
+				self.crouchHold = false
+				timer.Simple (0, function()
+					if !IsValid (self) then return end
+					self.attackHold = true
+					self.lookAngle = Angle (0, self:EyeAngles().y, self:EyeAngles().z)
+					timer.Simple (0.5, function()
+						if !IsValid (self) then return end
+						self.attackHold = false
+						self.Task = 1
+						self.deployTimer = false --comment this out if things no work properly
+						self.canDeployTimer = true
+					end)
+				end)
+			end)
+		end
+	end
+	
+	if self.canCJumpTimer and self:GetZombieClassTable().Name != "Crow" then
+		if self.cJumpTimer then
+			self.canCJumpTimer = false
+			self.crouchHold = true
+			
+			local atr = util.TraceHull( {
+				start = self:EyePos(),
+				endpos = self:EyePos() + self:EyeAngles():Forward() * 35,
+				mins = Vector(-25, -25, -25),
+				maxs = Vector(25, 25, 25),
+				ignoreworld = true,
+				filter = function( ent ) if ( ent:GetClass() == "prop_door_rotating" or ent:GetClass() == "func_door_rotating" or ent:GetClass() == "func_door" ) then return true end end
+			} )
+			
+			if IsValid(atr.Entity) then
+				self.useHold = true
+			end
+			
+			timer.Simple (0.05, function()
+				if !IsValid(self) then return end
+				self.jumpHold = true
+				
+				timer.Simple (1, function()
+					if !IsValid(self) then return end
+					
+					if self:GetVelocity():Length() < 10 then
+						self.strafeType = 0
+						--self.useHold = true
+						
+						--[[timer.Simple (0.01, function()
+							if !IsValid (self) then return end
+							self.useHold = false
+						end)]]
+						
+						timer.Simple (0.5, function()
+							if !IsValid(self) then return end
+							self.strafeType = 1
+							timer.Simple (0.75, function()
+								if !IsValid(self) then return end
+								self.strafeType = -1
+								
+								self.crouchHold = false
+								timer.Simple (0.5, function()
+									if !IsValid(self) then return end
+									self.cJumpTimer = false
+									self.canCJumpTimer = true
+								end)
+							end)
+						end)
+					else
+					
+					self.crouchHold = false
+					timer.Simple (0.10, function()
+						if !IsValid(self) then return end
+						self.cJumpTimer = false
+						self.canCJumpTimer = true
+						end)
+					end
+				end)
+			end)
+		end
+	end
+end
+
+function plymeta:InputCheck(cmd)
+	if self.moveType == -1 then
+		self.cJumpDelay = 0
+		cmd:SetForwardMove( 0 )
+		cmd:SetSideMove( 0 )
+	elseif self.moveType == 0 then
+		cmd:SetForwardMove( 1000 )
+		cmd:SetSideMove( 0 )
+	elseif self.moveType == 1 then
+		cmd:SetForwardMove( 1000 )
+		cmd:SetSideMove( -1000 )
+	elseif self.moveType == 2 then
+		cmd:SetForwardMove( 0 )
+		cmd:SetSideMove( -1000 )
+	elseif self.moveType == 3 then
+		cmd:SetForwardMove( -1000 )
+		cmd:SetSideMove( -1000 )
+	elseif self.moveType == 4 then
+		cmd:SetForwardMove( -1000 )
+		cmd:SetSideMove( 0 )
+	elseif self.moveType == 5 then
+		cmd:SetForwardMove( -1000 )
+		cmd:SetSideMove( 1000 )
+	elseif self.moveType == 6 then
+		cmd:SetForwardMove( 0 )
+		cmd:SetSideMove( 1000 )
+	elseif self.moveType == 7 then
+		cmd:SetForwardMove( 1000 )
+		cmd:SetSideMove( 1000 )
+	end
+
+	if self.strafeType == 0 then
+		cmd:SetSideMove( 1000 )
+	elseif self.strafeType == 1 then
+		cmd:SetSideMove( -1000 )
+	else
+		--cmd:SetSideMove( 0 )
+	end
+	
+--------------------------------------------------
+
+	local attack = 0
+	local attack2 = 0
+	local reload = 0
+	local jump = 0
+	local crouch = 0
+	local use = 0
+	local zoom = 0
+	local sprint = 0
+	
+	if self.attackHold then
+		attack = IN_ATTACK
+		
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.attackHold = false
+		end)
+	end
+	if self.attack2Hold then
+		attack2 = IN_ATTACK2
+		
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.attack2Hold = false
+		end)
+	end	
+	if self.reloadHold then
+		reload = IN_RELOAD
+		
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.reloadHold = false
+		end)
+	end
+	if self.jumpHold then
+		jump = IN_JUMP
+		
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.jumpHold = false
+		end)
+	end
+	if self.crouchHold then
+		crouch = IN_DUCK
+		
+		--[[timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.crouchHold = false
+		end)]]
+	end
+	if self.useHold then
+		use = IN_USE
+		
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.useHold = false
+		end)
+	end
+	if self.zoomHold then
+		zoom = IN_ZOOM
+		
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.zoomHold = false
+		end)
+	end
+	if self.sprintHold then
+		sprint = IN_SPEED
+		
+		timer.Simple(0, function()
+			if !IsValid(self) then return end
+			
+			self.sprintHold = false
+		end)
+	end
+	
+	cmd:SetButtons(bit.bor( attack, attack2, reload, jump, crouch, use, zoom, sprint ))
+end
+
+function game.IsObj()
+	if string.find( game.GetMap(), "_obj_" ) then
+		return true
+	else
+		return false
+	end
+end
+
+function SayPresetMessage(bot, category, teamOnly)
 	if teamChat == nil then teamChat = false end
 	
 	if bot.prevSay == category then return end
 	if GetConVar( "zs_bot_can_chat" ):GetInt() == 0 then return end
 	
 	bot.prevSay = category
-	target = tostring(target)
 	
-	local function botSay(bot, msg)
+	local function botSay(msg)
 		if teamOnly then
 			bot:Say(msg, true)
 		else
@@ -20,24 +398,21 @@ function SayPresetMessage(bot, category, teamOnly, target)
 	
 	if category == 0 then
 		--Medic messages
-		local randMsg = math.random(0, 2)
+		local msgs = {"MEDIC!", "I need a medic!", "I need heals!"}
+		local hpMsgs = {" I'm at " .. bot:Health() .. "HP.", " My HP is at " .. bot:Health()}
+		local message = msgs[math.random(1, #hpMsgs)]
 		
-		if randMsg == 0 then
-			botSay(bot, "MEDIC!")
-		elseif randMsg == 1 then
-			botSay(bot, "I need a medic!")
-		elseif randMsg == 2 then
-			botSay(bot, "I need heals!")
+		if bot.Skill > 50 then
+			message = message .. hpMsgs[math.random(1, #hpMsgs)]
 		end
+		
+		botSay(message)
 	elseif category == 1 then
 		--Boss outside messages
-		local randMsg = math.random(0, 1)
+		local msgs = {bot.FollowerEnt.TargetEnemy:GetZombieClassTable().Name .. " outside.", bot.FollowerEnt.TargetEnemy:GetZombieClassTable().Name .. " is outside the cade."}
+		local message = msgs[math.random(1, #msgs)]
 		
-		if randMsg == 0 then
-			botSay(bot, target .. " outside.")
-		elseif randMsg == 1 then
-			botSay(bot, target .. " is outside the cade.")
-		end
+		botSay(message)
 	elseif category == 2 then
 	
 	elseif category == 3 then
@@ -71,14 +446,27 @@ timer.Create( "mah timer", 1, 0, function()
 	end
 end )]]
 
-debug.getregistry().Player.LookatPosXY = function( self, cmd, pos )
-	local theAngle = (Vector (pos.x, pos.y, 0) - Vector (self:GetPos().x, self:GetPos().y, 0)):Angle()
+function plymeta:LookatPosXY( cmd, pos )
+	local theAngle = nil
+	
+	if self:WaterLevel() <= 0 then
+		theAngle = (Vector (pos.x, pos.y, 0) - Vector (self:GetPos().x, self:GetPos().y, 0)):Angle()
+	else
+		theAngle = (Vector (pos.x, pos.y, pos.z) - Vector (self:GetPos().x, self:GetPos().y, self:GetPos().z)):Angle()
+	end
 	self.lookAngle = Angle( theAngle.x, theAngle.y, 0 )
+end
+
+function GetRandomPositionOnNavmesh( pos, radius, stepdown, stepup )
+	local randomPos = pos + Angle(0, math.random(-180, 180), 0):Forward() * math.random(0, radius)
+	local posOnNavmesh = navmesh.GetNearestNavArea( randomPos, false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( randomPos )
+	
+	return posOnNavmesh
 end
 
 --[[timer.Create( "ZSBotQuotaCheck", 0.5, 0, function ()
 	if #GetZSBots() < GetConVar( "zs_bot_quota" ):GetInt() and #player.GetAll() < game.MaxPlayers() then
-		CreateZSBot()
+		player.CreateZSBot()
 	end
 	if #GetZSBots() > GetConVar( "zs_bot_quota" ):GetInt() then
 		GetZSBots()[#GetZSBots()]:Kick()
@@ -97,7 +485,33 @@ function player.GetZSBots()
 	return zsbots
 end
 
-function FindNearestEntity( className, thisEnt, range )
+function CountNearbyFriends( bot, radius )
+	--debugoverlay.Sphere( bot:EyePos(), radius, 0.5, Color( 255, 255, 255, 0 ), true )
+	local tbl = {  }
+	
+	for i, friend in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
+		if friend:IsPlayer() and friend:Team() == bot:Team() and friend != bot then
+			table.insert(tbl, friend)
+		end
+	end
+	
+	return #tbl
+end
+
+function CountNearbyEnemies( bot, radius )
+	local tbl = {  }
+	
+	for i, enemy in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
+		if enemy:IsPlayer() and enemy:Team() != bot:Team() and enemy != bot then
+			table.insert(tbl, enemy)
+		end
+	end
+	
+	return #tbl
+end
+
+--------------FIND NEAREST--------------------------------------
+function FindNearestEnemy( className, thisEnt, range )
 
 	local nearestEnt
     
@@ -113,38 +527,86 @@ function FindNearestEntity( className, thisEnt, range )
     return nearestEnt
 end
 
-function CountNearbyFriends( bot, radius )
-	--debugoverlay.Sphere( bot:EyePos(), radius, 0.5, Color( 255, 255, 255, 0 ), true )
-	local tbl = {  }
-	
-	for i, friend in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
-		if friend:GetClass() == "player" and friend:Team() == bot:Team() and friend != bot then
-			table.insert(tbl, friend)
+function AnEnemyIsInSight(className, thisEnt)
+    for i, entity in ipairs( ents.FindByClass( className ) ) do 
+		if ( entity != thisEnt and entity:Team() != thisEnt:Team() and entity:GetZombieClassTable().Name != "Crow" ) then
+			local tr = util.TraceLine( {
+				start = thisEnt:EyePos(),
+				endpos = entity:EyePos(),
+				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+			} )
+			
+			if !tr.Hit then
+				return true
+			end
 		end
-	end
+    end 
 	
-	return #tbl
+    return false
 end
 
-function CountNearbyEnemies( bot, radius )
-	local tbl = {  }
-	
-	for i, enemy in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
-		if enemy:GetClass() == "player" and enemy:Team() != bot:Team() and enemy != bot then
-			table.insert(tbl, enemy)
-		end
-	end
-	
-	return #tbl
+function FindNearestEnemyInSight( className, thisEnt, range )
+
+	local nearestEnt
+    
+    for i, entity in ipairs( ents.FindByClass( className ) ) do 
+    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+		
+		local tr = util.TraceLine( {
+			start = thisEnt:EyePos(),
+			endpos = entity:EyePos(),
+			filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+		} )
+		
+        if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:GetZombieClassTable().Name != "Crow" and !tr.Hit ) then
+        
+            nearestEnt = entity
+            range = distance
+            
+        end 
+    end 
+    return nearestEnt
 end
 
-function FindNearestEntity2( className, thisEnt, range )
+function FindNearestEntity( className, thisEnt, range )
 
 	local nearestEnt
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
     	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
         if ( distance <= range ) then
+        
+            nearestEnt = entity
+            range = distance
+            
+        end 
+    end 
+    return nearestEnt
+end
+
+function FindNearestTeammate( className, thisEnt, range )
+
+	local nearestEnt
+    
+    for i, entity in ipairs( ents.FindByClass( className ) ) do 
+    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+        if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() ) then
+        
+            nearestEnt = entity
+            range = distance
+            
+        end 
+    end 
+    return nearestEnt
+end
+
+function FindNearestPlayerTeammate( className, thisEnt, range )
+
+	local nearestEnt
+    
+    for i, entity in ipairs( ents.FindByClass( className ) ) do 
+    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+        if ( distance <= range and entity != thisEnt and !entity:IsBot() and entity:Team() == thisEnt:Team() ) then
         
             nearestEnt = entity
             range = distance
@@ -172,7 +634,7 @@ function FindNearestProp( thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestProp2( thisEnt, range )
+function FindNearestPropOrBreakable( thisEnt, range )
 
 	local nearestEnt
     
@@ -188,23 +650,7 @@ function FindNearestProp2( thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestTeammate( className, thisEnt, range )
-
-	local nearestEnt
-    
-    for i, entity in ipairs( ents.FindByClass( className ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
-        if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() and entity:Health() <= (3 / 4 * entity:GetMaxHealth()) ) then
-        
-            nearestEnt = entity
-            range = distance
-            
-        end 
-    end 
-    return nearestEnt
-end
-
-function FindNearestProp3( thisEnt, range )
+function FindNearestNailedPropOrBreakable( thisEnt, range )
 
 	local nearestEnt
     
@@ -274,13 +720,6 @@ function FindNearestLoot( thisEnt, range )
     return nearestEnt
 end
 
-function GetRandomPositionOnNavmesh( pos, radius, stepdown, stepup )
-	local randomPos = pos + Angle(0, math.random(-180, 180), 0):Forward() * math.random(0, radius)
-	local posOnNavmesh = navmesh.GetNearestNavArea( randomPos, false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( randomPos )
-	
-	return posOnNavmesh
-end
-
 function FindNearestHidingSpot( thisEnt, range )
 	local nearestSpot
     
@@ -324,6 +763,7 @@ function FindNearestSniperSpot( thisEnt, range )
 	end
     return nearestSpot
 end
+----------------------------------------------------------------
 
 function MoveToPosition (bot, position, cmd)
 	local vec = ( position - bot:GetPos() ):GetNormal():Angle().y
@@ -405,7 +845,6 @@ function OtherWeaponWithAmmo(bot)
 end
 
 function CheckNavMeshAttributes( bot, cmd )
-
 	if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_CROUCH then
 		if bot.attackHold then
 			cmd:SetButtons( bit.bor( IN_DUCK, IN_ATTACK ) )
@@ -496,34 +935,37 @@ if !table.HasValue(bot.DefendingSpots, area:GetCenter()) and !IsValid( tr.Entity
 	table.insert (bot.DefendingSpots, area:GetCenter())
 end]]
 
-function FindCadingSpotsInArea( bot, centerArea )
+function entmeta:FindCadingSpots( centerArea )
+	if self.UnCheckableAreas == nil then self.UnCheckableAreas = {} end
+	if self.DefendingSpots == nil then self.DefendingSpots = {} end
+	if self.CadingSpots == nil then self.CadingSpots = {} end
 	
-	if table.HasValue( bot.UnCheckableAreas, centerArea ) or !IsValid( centerArea) then return end
+	if table.HasValue( self.UnCheckableAreas, centerArea ) or !IsValid( centerArea) then return end
 	
 	local northConnectedAreas = centerArea:GetAdjacentAreasAtSide(0)
 	local southConnectedAreas = centerArea:GetAdjacentAreasAtSide(2)
 	local eastConnectedAreas = centerArea:GetAdjacentAreasAtSide(1)
 	local westConnectedAreas = centerArea:GetAdjacentAreasAtSide(3)
 	
-	--PrintTable (bot.UnCheckableAreas)
+	--PrintTable (self.UnCheckableAreas)
 	print ("Checking around " .. tostring(centerArea) .. " for cading spots")
 	
-	if !table.HasValue( bot.UnCheckableAreas, centerArea ) then
-		table.insert( bot.UnCheckableAreas, centerArea )
+	if !table.HasValue( self.UnCheckableAreas, centerArea ) then
+		table.insert( self.UnCheckableAreas, centerArea )
 	end
 	
 	for i, area in ipairs(northConnectedAreas) do
 		if area:GetSizeX() < centerArea:GetSizeX() and area:GetSizeY() < centerArea:GetSizeY() then
 			
 			if area:GetAdjacentAreasAtSide(1)[1] == nil and area:GetAdjacentAreasAtSide(3)[1] == nil then
-				if !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-					table.insert (bot.DefendingSpots, area:GetCenter())
+				if !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+					table.insert (self.DefendingSpots, area:GetCenter())
 				end
 			end
 		end
 		if area:GetSizeX() >= centerArea:GetSizeX() or area:GetSizeY() >= centerArea:GetSizeY() then
-			if !table.HasValue(bot.UnCheckableAreas, area) and !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-				FindCadingSpotsInArea( bot, area )
+			if !table.HasValue(self.UnCheckableAreas, area) and !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+				self:FindCadingSpots(area)
 			end
 		end
 	end
@@ -531,14 +973,14 @@ function FindCadingSpotsInArea( bot, centerArea )
 	for i, area in ipairs(southConnectedAreas) do
 		if area:GetSizeX() < centerArea:GetSizeX() and area:GetSizeY() < centerArea:GetSizeY() then
 			if area:GetAdjacentAreasAtSide(1)[1] == nil and area:GetAdjacentAreasAtSide(3)[1] == nil then
-				if !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-					table.insert (bot.DefendingSpots, area:GetCenter())
+				if !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+					table.insert (self.DefendingSpots, area:GetCenter())
 				end
 			end
 		end
 		if area:GetSizeX() >= centerArea:GetSizeX() or area:GetSizeY() >= centerArea:GetSizeY() then
-			if !table.HasValue(bot.UnCheckableAreas, area) and !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-				FindCadingSpotsInArea( bot, area )
+			if !table.HasValue(self.UnCheckableAreas, area) and !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+				self:FindCadingSpots(area)
 			end
 		end
 	end
@@ -546,14 +988,14 @@ function FindCadingSpotsInArea( bot, centerArea )
 	for i, area in ipairs(eastConnectedAreas) do
 		if area:GetSizeX() < centerArea:GetSizeX() and area:GetSizeY() < centerArea:GetSizeY() then
 			if area:GetAdjacentAreasAtSide(0)[1] == nil and area:GetAdjacentAreasAtSide(2)[1] == nil then
-				if !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-					table.insert (bot.DefendingSpots, area:GetCenter())
+				if !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+					table.insert (self.DefendingSpots, area:GetCenter())
 				end
 			end
 		end
 		if area:GetSizeX() >= centerArea:GetSizeX() or area:GetSizeY() >= centerArea:GetSizeY() then
-			if !table.HasValue(bot.UnCheckableAreas, area) and !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-				FindCadingSpotsInArea( bot, area )
+			if !table.HasValue(self.UnCheckableAreas, area) and !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+				self:FindCadingSpots(area)
 			end
 		end
 	end
@@ -561,20 +1003,25 @@ function FindCadingSpotsInArea( bot, centerArea )
 	for i, area in ipairs(westConnectedAreas) do
 		if area:GetSizeX() < centerArea:GetSizeX() and area:GetSizeY() < centerArea:GetSizeY() then
 			if area:GetAdjacentAreasAtSide(0)[1] == nil and area:GetAdjacentAreasAtSide(2)[1] == nil then
-				if !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-					table.insert (bot.DefendingSpots, area:GetCenter())
+				if !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+					table.insert (self.DefendingSpots, area:GetCenter())
 				end
 			end
+			--[[if area:GetAdjacentAreasAtSide(0)[1] != nil or area:GetAdjacentAreasAtSide(2)[1] != nil then
+				if !table.HasValue(self.UnCheckableAreas, area) and !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+					self:FindCadingSpots(area)
+				end
+			end]]
 		end
 		if area:GetSizeX() >= centerArea:GetSizeX() or area:GetSizeY() >= centerArea:GetSizeY() then
-			if !table.HasValue(bot.UnCheckableAreas, area) and !table.HasValue(bot.DefendingSpots, area:GetCenter()) then
-				FindCadingSpotsInArea( bot, area )
+			if !table.HasValue(self.UnCheckableAreas, area) and !table.HasValue(self.DefendingSpots, area:GetCenter()) then
+				self:FindCadingSpots(area)
 			end
 		end
 	end
 end
 
-function CreateZSBot( name )
+function player.CreateZSBot( name )
 	if !game.SinglePlayer() and #player.GetAll() < game.MaxPlayers() and engine.ActiveGamemode() == "zombiesurvival" then
 		if name == nil or name == "" then
 			local names = {"A Professional With Standards", "AimBot", "AmNot", "Aperture Science Prototype XR7", "Archimedes!", "BeepBeepBoop", "Big Mean Muther Hubbard", "Black Mesa", "BoomerBile", "Cannon Fodder", "CEDA", "Chell", "Chucklenuts", "Companion Cube", "Crazed Gunman", "CreditToTeam", "CRITRAWKETS", "Crowbar", "CryBaby", "CrySomeMore", "C++", "DeadHead", "Delicious Cake", "Divide by Zero", "Dog", "Force of Nature", "Freakin' Unbelievable", "Gentlemanne of Leisure", "GENTLE MANNE of LEISURE ", "GLaDOS", "Glorified Toaster with Legs", "Grim Bloody Fable", "GutsAndGlory!", "Hat-Wearing MAN", "Headful of Eyeballs", "Herr Doktor", "HI THERE", "Hostage", "Humans Are Weak", "H@XX0RZ", "I LIVE!", "It's Filthy in There!", "IvanTheSpaceBiker", "Kaboom!", "Kill Me", "LOS LOS LOS", "Maggot", "Mann Co.", "Me", "Mega Baboon", "Mentlegen", "Mindless Electrons", "MoreGun", "Nobody", "Nom Nom Nom", "NotMe", "Numnutz", "One-Man Cheeseburger Apocalypse", "Poopy Joe", "Pow!", "RageQuit", "Ribs Grow Back", "Saxton Hale", "Screamin' Eagles", "SMELLY UNFORTUNATE", "SomeDude", "Someone Else", "Soulless", "Still Alive", "TAAAAANK!", "Target Practice", "ThatGuy", "The Administrator", "The Combine", "The Freeman", "The G-Man", "THEM", "Tiny Baby Man", "Totally Not A Bot", "trigger_hurt", "WITCH", "ZAWMBEEZ", "Ze Ubermensch", "Zepheniah Mann", "0xDEADBEEF", "10001011101"}
@@ -583,8 +1030,7 @@ function CreateZSBot( name )
 		
 		--CREATE THE BOT
 		ply = player.CreateNextBot( name )
-		
-		ply.IsZSBot2 = true
+		ply.IsZSBot2 = true --Using IsZSBot2 cuz shitty GitHub ZSBots use IsZSBot and so it would conflict
 		
 		--FUNCTION DELAYS
 		ply.targetFindDelay = CurTime()
@@ -603,18 +1049,23 @@ function CreateZSBot( name )
 		
 		--OTHER STUFF
 		ply.LastPath = nil
-		ply.attackProp = nil
 		ply.lookProp = nil
 		ply.lookPos = nil
+		ply.lookDistance = 1000
 		ply.lastWeapon = nil
 		ply.heldProp = nil
 		ply.strafeType = -1 --0 = left, 1 = right, 2 = back
 		ply.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
-		ply.stopVel = 40
-		ply.canRaycast = true
+		ply.shouldGoOutside = false
+		ply.canShouldGoOutside = true
+		
+		--UNUSED THINGYS I MIGHT REMOVE XD
+		--[[ply.stopVel = 40
+		ply.canRaycast = true]]
 		
 		--ply.State = 0 --Idle, Hunt, MoveTo, Buy, Hide
 		--ply.stateName = "NONE"
+		ply.Attacking = false
 		ply.Task = -1
 		ply.taskName = "NONE"
 		ply.Disposition = 0 --ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
@@ -626,9 +1077,9 @@ function CreateZSBot( name )
 		ply.nearbyEnemies = 0
 		
 		--NAV AREAS
-		ply.DefendingSpots = {  }
+		--[[ply.DefendingSpots = {  }
 		ply.CadingSpots = {  }
-		ply.UnCheckableAreas = {  }
+		ply.UnCheckableAreas = {  }]]
 		
 		--CHAT MESSAGES
 		ply.sayMessage = ""
@@ -661,21 +1112,20 @@ function CreateZSBot( name )
 		--INPUT VALUES
 		ply.attackHold = false
 		ply.attack2Hold = false
+		ply.reloadHold = false
 		ply.jumpHold = false
 		ply.crouchHold = false
 		ply.useHold = false
 		ply.zoomHold = false
-		
-		ply.shouldGoOutside = false
-		ply.canShouldGoOutside = true
+		ply.sprintHold = false
 		
 		--SMOOTH ROTATION
 		ply.lookAngle = Angle(0, 0, 0)
-		ply.rotationSpeed = 5 -- was 10
+		ply.rotationSpeed = 5
 		ply.angle = Angle(0, 0, 0)
 		
 		--DO STUFF ON SPAWN LIKE CHOOSING LOADOUTS, CHANGING CLASS, ETC
-		DoSpawnStuff( ply, false )
+		ply:DoSpawnStuff( false )
 	else
 		MsgC( Color( 255, 255, 255 ), "Failed to create ZSBot.\n" )
 	end
@@ -702,9 +1152,9 @@ concommand.Add( "zs_bot_add", function ( ply, cmd, args, argStr )
 		
 		for i=1, args[1] do 
 			if args[2] == nil then
-				CreateZSBot()
+				player.CreateZSBot()
 			else
-				CreateZSBot( args[2] )
+				player.CreateZSBot( args[2] )
 			end
 		end
 	end
@@ -802,8 +1252,7 @@ concommand.Add( "zs_bot_kill", function ( ply, cmd, args, argStr )
 	end
 end, nil, "zs_bot_kill <name> - Kills a bot matching the given criteria." )
 
-function RerollBotClass (thisEnt)
-
+function plymeta:RerollBotClass ()
 	BotClasses = {
 	"Zombie", "Zombie", "Zombie",
 	"Ghoul",
@@ -818,25 +1267,50 @@ function RerollBotClass (thisEnt)
 	}
 	
 	if not GAMEMODE:GetWaveActive() then return end
-	if thisEnt:GetZombieClassTable().Name == "Zombie Torso" or thisEnt:GetZombieClassTable().Name == "Fresh Dead" or thisEnt:GetZombieClassTable().Boss then return end
+	if self:GetZombieClassTable().Name == "Zombie Torso" or self:GetZombieClassTable().Name == "Fresh Dead" or self:GetZombieClassTable().Boss then return end
 	local classId = table.Random(BotClasses)
 	local class = GAMEMODE.ZombieClasses[classId]
 	if not class then
 		table.RemoveByValue(BotClasses, classId)
-		RerollBotClass(thisEnt)
+		self:RerollBotClass()
 		return
 	end
 	if class.Wave > GAMEMODE:GetWave() then 
-		RerollBotClass(thisEnt)
+		self:RerollBotClass()
 		return
 	end
-	thisEnt:SetZombieClass(class.Index)
+	self:SetZombieClass(class.Index)
 end
 
-function CheckPropPhasing (bot, cmd)
+function plymeta:RunAwayCheck( cmd )
+	if IsValid (self.FollowerEnt.TargetEnemy) and self.FollowerEnt.TargetEnemy:Alive() then
+		self.b = true
+		
+		if self.runAwayTimer <= 0 then
+			if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= 150 then
+				self.runAwayTimer = math.random(1, 3)
+			end
+		elseif self.Skill > 50 then
+			--print ("running away" .. self.runAwayTimer)
+			self.Disposition = 0
+			
+			if !self:GetActiveWeapon().IsMelee then
+				for i, meleeWep in ipairs(self:GetWeapons()) do 
+					if meleeWep.IsMelee then
+						self:SelectWeapon(meleeWep)
+						
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
+function plymeta:CheckPropPhasing( cmd )
 	local tr = util.TraceHull( {
-		start = bot:GetPos(),
-		endpos = bot:GetPos(),
+		start = self:GetPos(),
+		endpos = self:GetPos(),
 		mins = Vector( -18, -18, 0 ),
 		maxs = Vector( 18, 18, 73 ),
 		ignoreworld = true,
@@ -844,42 +1318,55 @@ function CheckPropPhasing (bot, cmd)
 	} )
 	
 	if tr.Entity:IsNailed() then
-		--bot.cJumpTimer = false
-		bot.zoomTimer = true
+		--self.cJumpTimer = false
+		self.zoomTimer = true
 	end
 end
 
 function ShootAtTarget( bot )
+	local skillSteadyShoot = math.Remap( bot.Skill, 0, 100, 25, 10 )
+	
 	local th = util.TraceHull( {
-		start = bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(AimPoint( bot )),
-		mins = Vector( -25, -25, -25 ),
-		maxs = Vector( 25, 25, 25 ),
+		start = bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(bot:AimPoint( bot.FollowerEnt.TargetEnemy )),
+		mins = Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ),
+		maxs = Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ),
 		ignoreworld = true,
-		filter = function( ent ) if ( ent == bot.FollowerEnt.Target ) then return true end end
+		filter = function( ent ) if ( ent == bot.FollowerEnt.TargetEnemy ) then return true end end
 	} )
 	
-	if th.Entity == bot.FollowerEnt.Target then
+	local colour = Color( 255, 0, 0, 0)
+	
+	if th.Hit then
 		bot.attackTimer = true
+		colour = Color( 0, 255, 0, 0)
 	end
+	
+	debugoverlay.Box( bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(bot:AimPoint( bot.FollowerEnt.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour )
 end
 
-function AimPoint( bot )
-	if bot:Team() == TEAM_UNDEAD then return bot.FollowerEnt.Target:EyePos() end
+function plymeta:AimPoint( target )
+	if self:Team() == TEAM_UNDEAD then
+		if target:IsPlayer() then
+			return target:EyePos()
+		else
+			return target:GetPos()
+		end
+	end
 	
-	local numHitBoxGroups = bot.FollowerEnt.Target:GetHitBoxGroupCount()
+	local numHitBoxGroups = target:GetHitBoxGroupCount()
 
 	for group=0, numHitBoxGroups - 1 do
-		local numHitBoxes = bot.FollowerEnt.Target:GetHitBoxCount( group )
+		local numHitBoxes = target:GetHitBoxCount( group )
 
 		for hitbox=0, numHitBoxes - 1 do
-			local bone = bot.FollowerEnt.Target:GetHitBoxBone( hitbox, group )
+			local bone = target:GetHitBoxBone( hitbox, group )
 
-			--print( "Hit box group " .. group .. ", hitbox " .. hitbox .. " is attached to bone " .. bot.FollowerEnt.Target:GetBoneName( bone ) )
+			--print( "Hit box group " .. group .. ", hitbox " .. hitbox .. " is attached to bone " .. target:GetBoneName( bone ) )
 			
-			if bot.FollowerEnt.Target:GetBoneName( bone ) == "ValveBiped.Bip01_Head1" then
+			if target:GetBoneName( bone ) == "ValveBiped.Bip01_Head1" or target:GetBoneName( bone ) == "ValveBiped.HC_Body_Bone" or target:GetBoneName( bone ) == "ValveBiped.HC_BodyCube" or target:GetBoneName( bone ) == "ValveBiped.Headcrab_Cube1" then
 				
-				local mins, maxs = bot.FollowerEnt.Target:GetHitBoxBounds( hitbox, group )
-				local pos, rot = bot.FollowerEnt.Target:GetBonePosition( bone )
+				local mins, maxs = target:GetHitBoxBounds( hitbox, group )
+				local pos, rot = target:GetBonePosition( bone )
 				
 				local center = (mins + maxs) / 2
 				
@@ -893,7 +1380,11 @@ function AimPoint( bot )
 		end
 	end
 	
-	return bot.FollowerEnt.Target:EyePos()
+	if target:IsPlayer() then
+		return target:EyePos()
+	else
+		return target:GetPos()
+	end
 end
 
 function SetTaskNames( bot )
@@ -969,25 +1460,37 @@ function SetTaskNames( bot )
 		else
 			bot.taskName = bot.Task
 		end
+	elseif bot.Task == 12 then
+		if bot:Team() != TEAM_UNDEAD then
+			bot.taskName = "FOLLOW"
+		else
+			bot.taskName = bot.Task
+		end
+	elseif bot.Task == 13 then
+		if bot:Team() != TEAM_UNDEAD then
+			bot.taskName = "SPAWNKILL_ZOMBIES"
+		else
+			bot.taskName = bot.Task
+		end
 	else
 		bot.taskName = bot.Task
 	end
 	
 	
 	if bot.Disposition == 0 then
-		bot.dispositionName = "ENGAGE_AND_INVESTIGATE"
-	elseif bot.Disposition == 1 then
-		bot.dispositionName = "OPPORTUNITY_FIRE"
-	elseif bot.Disposition == 2 then
-		bot.dispositionName = "SELF_DEFENSE"
-	elseif bot.Disposition == 3 then
 		bot.dispositionName = "IGNORE_ENEMIES"
+	elseif bot.Disposition == 1 then
+		bot.dispositionName = "ENGAGE_AND_INVESTIGATE"
+	elseif bot.Disposition == 2 then
+		bot.dispositionName = "OPPORTUNITY_FIRE"
+	elseif bot.Disposition == 3 then
+		bot.dispositionName = "SELF_DEFENSE"
 	else
 		bot.dispositionName = bot.Disposition
 	end
 end
 
-function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJunp )
+function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJump )
 	if lookAtPoint == nil then
 		lookAtPoint = true
 	end
@@ -997,6 +1500,12 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	
 	if !IsValid( bot.FollowerEnt.P ) then return end
 	
+	if IsValid(bot.FollowerEnt.TargetEnemy) then
+		if bot.lookAngle == (bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle() then 
+			lookAtPoint = false
+		end
+	end
+	
 	if crouchJump then
 	
 		if bot.cJumpDelay < 1 then
@@ -1004,7 +1513,7 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 		end
 		
 		if bot.cJumpDelay >= 1 then
-			if bot:GetVelocity():Length() < bot.stopVel then
+			if bot:GetVelocity():Length() < 40 then
 				bot.cJumpTimer = true
 			end
 			
@@ -1040,36 +1549,36 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	end
 end
 
-function DoLadderMovement (bot, cmd, curgoal)
-	if bot.b then 
-		bot.moveType = 0
-		bot.cJumpDelay = 0
+function plymeta:DoLadderMovement (cmd, curgoal)
+	if self.b then 
+		self.moveType = 0
+		self.cJumpDelay = 0
 		cmd:SetButtons( IN_FORWARD ) 
 		
-		local curgoalposXY = (Vector (curgoal.pos.x, curgoal.pos.y, 0) - Vector (bot:EyePos().x, bot:EyePos().y, 0)):Angle()
+		local curgoalposXY = (Vector (curgoal.pos.x, curgoal.pos.y, 0) - Vector (self:EyePos().x, self:EyePos().y, 0)):Angle()
 		
-		bot.lookAngle = Angle (-20, curgoalposXY.y, bot:EyeAngles().z)
+		self.lookAngle = Angle (-20, curgoalposXY.y, self:EyeAngles().z)
 		
-		--bot.lookAngle = ((curgoal.pos - bot:GetPos()):Angle())
+		--self.lookAngle = ((curgoal.pos - self:GetPos()):Angle())
 	end
 									
-	if bot.canGetOffLadderTimer then
-		bot.canGetOffLadderTimer = false
+	if self.canGetOffLadderTimer then
+		self.canGetOffLadderTimer = false
 		timer.Simple (5,function() 
-			if !IsValid(bot) then return end
-			bot.b = false
-			bot.useHold = true
+			if !IsValid(self) then return end
+			self.b = false
+			self.useHold = true
 			timer.Simple (0.05,function() 
-				if !IsValid(bot) then return end
-				bot.useHold = false
-				bot.canGetOffLadderTimer = true
+				if !IsValid(self) then return end
+				self.useHold = false
+				self.canGetOffLadderTimer = true
 				timer.Simple (0.05,function() 
-					if !IsValid(bot) then return end
-					if bot:GetMoveType() == MOVETYPE_LADDER then
-						if !IsValid(bot) then return end
-						bot.jumpHold = true
+					if !IsValid(self) then return end
+					if self:GetMoveType() == MOVETYPE_LADDER then
+						if !IsValid(self) then return end
+						self.jumpHold = true
 						timer.Simple (0.05,function() 
-							bot.jumpHold = false
+							self.jumpHold = false
 						end)
 					end
 				end)
@@ -1078,72 +1587,86 @@ function DoLadderMovement (bot, cmd, curgoal)
 	end
 end
 
-function DoSpawnStuff( ply, changeClass )
-	ply.Task = -1
-	ply.moveType = -1
-	ply.newPointTimer = 15
-	ply.runAwayTimer = 0
+function plymeta:DoSpawnStuff( changeClass )
+	--RESET SOME VALUES ORELSE BAD THINGS HAPPEN
+	if GAMEMODE.ZombieEscape then self.lookDistance = defaultEscapeLookDistance else self.lookDistance = defaultLookDistance end
 	
-	if ply:Team() != TEAM_UNDEAD then
-		
+	self.Task = -1
+	self.Disposition = 0
+	self.moveType = -1
+	self.newPointTimer = 15
+	self.runAwayTimer = 0
+	
+	if self:Team() != TEAM_UNDEAD then
 		timer.Simple(0, function()
-			if !IsValid(ply) then return end
+			if !IsValid(self) then return end
 			
-			ply:SetPlayerColor(Vector(math.Rand (0, 1), math.Rand (0, 1), math.Rand (0, 1)))
+			self:SetPlayerColor(Vector(math.Rand (0, 1), math.Rand (0, 1), math.Rand (0, 1)))
 		end)
 		
-		if GAMEMODE:GetWave() != 0 then
-			ply.Task = 1
-			
-			timer.Simple( 4, function() 
-				if !IsValid(ply) then return end
-				GiveBotWeapons( ply )
-			end)
+		if GAMEMODE.ZombieEscape then
+			self.Task = 12
+			self.Disposition = 1
 		else
-			timer.Simple(0, function() 
-				if !IsValid(ply) then return end
+			if GAMEMODE:GetWave() != 0 then
+				self.Task = 1
+				self.Disposition = 1
 				
-				local delay = math.Rand( 1, 15 )
-				print ("Buy delay for ", ply:Name(), "is ", delay)
-		
-				timer.Simple(delay, function() 
-					if !IsValid(ply) then return end
-					ply.Task = 1
-					GiveBotWeapons( ply )
+				timer.Simple( 4, function() 
+					if !IsValid(self) then return end
+					self:GiveRandomPresetLoadout()
 				end)
-			end)
+			else
+				timer.Simple(0, function() 
+					if !IsValid(self) then return end
+					
+					local delay = math.Rand( 1, 15 )
+					print ("Buy delay for ", self:Name(), "is ", delay)
+			
+					timer.Simple(delay, function() 
+						if !IsValid(self) then return end
+						if game.IsObj() then
+							self.Task = 12
+							self.Disposition = 1
+						else
+							self.Task = 1
+							self.Disposition = 1
+						end
+						self:GiveRandomPresetLoadout()
+					end)
+				end)
+			end
 		end
-		
 	else
-		ply.Task = 0
+		self.Task = 0
 		
-		if changeClass then
-			RerollBotClass( ply )
+		if changeClass and !game.IsObj() and !GAMEMODE.ZombieEscape then
+			self:RerollBotClass()
 		end
 	end
 end
 
-function GiveBotWeapons( ply )
-	if !IsValid( ply ) then return end
+function plymeta:GiveRandomPresetLoadout()
+	if !IsValid( self ) then return end
 	
 	-- 12 default starting loadouts, the rest are custom
 	if math.random(1, 13) == 13 then
 		local oof = math.random(1, 2)
 		if oof == 1 then
-			if GAMEMODE.CheckedOut[ply:UniqueID()] or GAMEMODE.ZombieEscape then return end
-			GAMEMODE.CheckedOut[ply:UniqueID()] = true
+			if GAMEMODE.CheckedOut[self:UniqueID()] or GAMEMODE.ZombieEscape then return end
+			GAMEMODE.CheckedOut[self:UniqueID()] = true
 			
-			ply:Give("weapon_zs_resupplybox")
-			ply:Give("weapon_zs_swissarmyknife")
+			self:Give("weapon_zs_resupplybox")
+			self:Give("weapon_zs_swissarmyknife")
 		elseif oof == 2 then
-			if GAMEMODE.CheckedOut[ply:UniqueID()] or GAMEMODE.ZombieEscape then return end
-			GAMEMODE.CheckedOut[ply:UniqueID()] = true
+			if GAMEMODE.CheckedOut[self:UniqueID()] or GAMEMODE.ZombieEscape then return end
+			GAMEMODE.CheckedOut[self:UniqueID()] = true
 	
-			ply:Give("weapon_zs_hammer")
-			ply.BuffMuscular = true
-			ply:DoMuscularBones()
+			self:Give("weapon_zs_hammer")
+			self.BuffMuscular = true
+			self:DoMuscularBones()
 		end
 	else
-		gamemode.Call("GiveRandomEquipment", ply)
+		gamemode.Call("GiveRandomEquipment", self)
 	end
 end

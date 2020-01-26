@@ -5,11 +5,49 @@ function controlBots ( bot, cmd )
 	cmd:ClearButtons()
 	
 	SetTaskNames( bot )
+	bot:DispositionCheck( cmd, bot.FollowerEnt.TargetEnemy )
+	bot:InputTimers()
+	bot:InputCheck( cmd )
 	
 	CheckNavMeshAttributes( bot, cmd )
+	--morale colour (0, 201, 201)
 	
-	--debugoverlay.ScreenText( -100, 0, "SEEK_AND_DESTROY", 0, Color( 255, 255, 255 ) )
+	if bot.FollowerEnt.TargetPosition != nil then
+		debugoverlay.Sphere( bot.FollowerEnt.TargetPosition, 5, 0, Color( 255, 255, 255, 0 ), true )
+	end
 	
+	for i, ply in ipairs(player.GetHumans()) do
+		if ply.FSpectatingEnt == bot then
+			debugoverlay.ScreenText( 0.55, 0.28, "Name: " .. bot:Name(), 0, Color(255, 255, 255) )
+			debugoverlay.ScreenText( 0.55, 0.3, "Health: " .. bot:Health(), 0, Color(255, 255, 0))
+			
+			--[[if bot.FollowerEnt.TargetPosition != nil then
+				debugoverlay.Sphere( bot.FollowerEnt.TargetPosition, 5, 0, Color( 255, 255, 255, 0 ), true )
+				debugoverlay.ScreenText( 0.55, 0.26, "Target Position: " .. tostring(bot.FollowerEnt.TargetPosition), 0, Color(255, 255, 255) )
+			end]]
+			
+			if IsValid(bot:GetActiveWeapon()) then
+				debugoverlay.ScreenText( 0.55, 0.32, "Weapon: " .. tostring(bot:GetActiveWeapon():GetClass()), 0, Color(255, 255, 255) )
+				debugoverlay.ScreenText( 0.55, 0.34, "Ammo: " .. bot:GetActiveWeapon():Clip1() .. "/" .. bot:GetAmmoCount(bot:GetActiveWeapon():GetPrimaryAmmoType()) , 0, Color(255, 255, 0))
+			end
+			
+			debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. bot.Skill .. "%", 0, Color(255, 255, 255))
+			
+			if !bot.Attacking then
+				debugoverlay.ScreenText( 0.55, 0.4, "Task: " .. bot.taskName, 0, Color(0, 255, 0))
+				debugoverlay.ScreenText( 0.55, 0.42, "Disposition: " .. bot.dispositionName, 0, Color(100, 100, 255))
+			elseif IsValid(bot.FollowerEnt.TargetEnemy) then
+				debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. bot.FollowerEnt.TargetEnemy:Name(), 0, Color(255, 0, 0))
+			end
+			
+			debugoverlay.ScreenText( 0.55, 0.54, "Steady view: " .. "N/A", 0, Color(255, 255, 0))
+			debugoverlay.ScreenText( 0.55, 0.56, "Nearby friends: " .. bot.nearbyFriends, 0, Color(102, 254, 100))
+			debugoverlay.ScreenText( 0.55, 0.58, "Nearby enemies: " .. bot.nearbyEnemies, 0, Color(254, 100, 100))
+			debugoverlay.ScreenText( 0.55, 0.6, "Nav Area: " .. tostring(navmesh.GetNavArea( bot:EyePos(), math.huge )), 0, Color(255, 255, 255))
+		end
+	end
+	
+	--[[
 	--====ABOVE PLAYER====
 	debugoverlay.EntityTextAtPosition(bot:EyePos(), -12, "Name: " .. bot:Name(), 0, Color(255, 255, 255))
 	debugoverlay.EntityTextAtPosition(bot:EyePos(), -10, "Health: " .. bot:Health(), 0, Color(255, 255, 0))
@@ -27,14 +65,30 @@ function controlBots ( bot, cmd )
 	debugoverlay.EntityTextAtPosition(bot:EyePos(), -1, "Nearby enemies: " .. bot.nearbyEnemies, 0, Color(255, 50, 50))
 	debugoverlay.EntityTextAtPosition(bot:EyePos(), 0, "Nav Area: " .. tostring(navmesh.GetNavArea( bot:EyePos(), math.huge )), 0, Color(255, 255, 255))
 	--=====================
-	
+	]]
 	-- Switch weapons if got no ammo
-	if bot.Task == 1 or bot.Task == 4 or bot.Task == 10 then
-		if bot:Team() != TEAM_UNDEAD and IsValid(bot:GetActiveWeapon()) and CurTime() > bot.targetFindDelay and bot.runAwayTimer <= 0 then
+	if bot.Task == 1 or bot.Task == 4 or bot.Task == 10 or bot.Task == 12 then
+		if bot:Team() != TEAM_UNDEAD and CurTime() > bot.targetFindDelay and bot.runAwayTimer <= 0 then
 			
-			curWep = bot:GetActiveWeapon()
-			
-			if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee then	
+			if IsValid(bot:GetActiveWeapon()) then
+				curWep = bot:GetActiveWeapon()
+				
+				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee then	
+					if OtherWeaponWithAmmo(bot) != nil then
+						bot:SelectWeapon(OtherWeaponWithAmmo(bot))
+					end
+					
+					if OtherWeaponWithAmmo(bot) == nil then
+						for i, meleeWep in ipairs(bot:GetWeapons()) do 
+							if meleeWep.IsMelee then
+								bot:SelectWeapon(meleeWep)
+								
+								break
+							end
+						end
+					end
+				end
+			else	
 				if OtherWeaponWithAmmo(bot) != nil then
 					bot:SelectWeapon(OtherWeaponWithAmmo(bot))
 				end
@@ -52,29 +106,6 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
-	if bot.Task == 1 or bot.Task == 4 or bot.Task == 10 then
-		if bot:Team() != TEAM_UNDEAD then
-			if IsValid(bot.FollowerEnt.Target) then
-				local dtr = util.TraceLine( {
-					start = bot:EyePos(),
-					endpos = AimPoint(bot),
-					filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and ent:GetClass() != "player" ) then return true end end
-				} )
-
-				local colour = Color( 0, 0, 0)
-
-				if !dtr.Hit then
-					colour = Color( 0, 255, 0, 0)
-				else
-					colour = Color( 255, 0, 0, 0)
-				end
-
-				debugoverlay.Box( bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(AimPoint( bot )), Vector( -25, -25, -25 ), Vector( 25, 25, 25 ), 0, colour )
-				debugoverlay.Line( bot:EyePos(), AimPoint( bot ), 0, colour, true )
-			end
-		end
-	end
-	
 	if bot:Team() != TEAM_UNDEAD then
 		if GetConVar( "zs_bot_muscular" ):GetInt() != 0 then
 			bot.BuffMuscular = true
@@ -82,13 +113,15 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
-	for i, area in ipairs(bot.UnCheckableAreas) do
-		debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
-	end
-	
-	for s, spot in ipairs(bot.DefendingSpots) do
-		if bot.DefendingSpots[1] != nil then
-			debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
+	if IsValid(bot.FollowerEnt.TargetArsenal) then
+		for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
+			debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
+		end
+		
+		for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
+			if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+				debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
+			end
 		end
 	end
 	
@@ -103,9 +136,20 @@ function controlBots ( bot, cmd )
 		end
 	end]]
 	
-	bot.angle = LerpAngle( bot.rotationSpeed * FrameTime( ), bot.angle, bot.lookAngle )
-	bot:SetEyeAngles(bot.angle)
-	cmd:SetViewAngles(bot.angle)
+	if bot.runAwayTimer > 0 then
+		bot.runAwayTimer = bot.runAwayTimer - FrameTime()
+	end
+	
+	if bot.Attacking then
+		local skillRotSpeed = math.Remap( bot.Skill, 0, 100, 5, 10 )
+		bot.rotationSpeed = skillRotSpeed
+	else
+		bot.rotationSpeed = defaultRotationSpeed
+	end
+	
+	local lerpAngle = LerpAngle( bot.rotationSpeed * FrameTime( ), bot:EyeAngles(), bot.lookAngle )
+	bot:SetEyeAngles(lerpAngle)
+	cmd:SetViewAngles(lerpAngle)
 	
 	if !IsValid( bot.FollowerEnt ) then
 		bot.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
@@ -113,9 +157,10 @@ function controlBots ( bot, cmd )
 		bot.FollowerEnt.Bot = bot
 	end
 	
-	if bot.FollowerEnt:GetPos() != bot:GetPos() and navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( bot:GetPos() ) != nil then
+	local daPos = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( bot:GetPos() )
+	if bot.FollowerEnt:GetPos() != daPos then
 		--bot.FollowerEnt:SetPos( bot:GetPos() )
-		bot.FollowerEnt:SetPos( navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( bot:GetPos() ) )
+		bot.FollowerEnt:SetPos( daPos )
 	end
 	
 	if bot.FollowerEnt.P then
@@ -143,28 +188,40 @@ function controlBots ( bot, cmd )
 	
 	if GAMEMODE:GetWaveActive() then
 		if IsValid (bot.FollowerEnt.TargetArsenal) then
-			if bot:GetPos():Distance( bot.FollowerEnt.TargetArsenal:GetPos() ) > 100 then
+			if bot:GetPos():Distance( bot.FollowerEnt.TargetArsenal:GetPos() ) > 200 then
 				bot.canShouldGoOutside = true
 			end
 		end
 	end
 	
 	if CurTime() > bot.targetFindDelay then
-		bot.FollowerEnt.Target = FindNearestEntity( "player", bot, 999999 )
-		
 		bot.nearbyFriends = CountNearbyFriends( bot, 300 )
 		bot.nearbyEnemies = CountNearbyEnemies( bot, 300 )
 		
 		if bot:Team() == TEAM_UNDEAD then
-			bot.attackProp = FindNearestProp2( bot, 999999 )
+			--bot.attackProp = FindNearestProp2( bot, 999999 )
 			bot.FollowerEnt.TargetPosition = FindNearestHidingSpot( bot, 999999 )
+			
+			if bot.Task == 1 then
+				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
+			elseif AnEnemyIsInSight("player", bot) then
+				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
+			else
+				bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot, 999999 )
+			end
 		else
+			bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
 			bot.FollowerEnt.TargetNailedProp = FindNearestNailedProp( bot, 999999 )
 			bot.FollowerEnt.TargetCadingProp = FindNearestProp( bot, 999999 )
 			bot.FollowerEnt.TargetLootItem = FindNearestLoot( bot, 999999 )
-			bot.FollowerEnt.TargetArsenal = FindNearestEntity2( "prop_arsenalcrate", bot, 999999 )
-			bot.FollowerEnt.TargetResupply = FindNearestEntity2( "prop_resupplybox", bot, 999999 )
-			bot.FollowerEnt.TargetTeammate = FindNearestTeammate( "player", bot, 999999 )
+			bot.FollowerEnt.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot, 999999 )
+			bot.FollowerEnt.TargetResupply = FindNearestEntity( "prop_resupplybox", bot, 999999 )
+			
+			if bot.Task != 12 then
+				bot.FollowerEnt.TargetTeammate = FindNearestTeammate( "player", bot, 999999 )
+			else
+				bot.FollowerEnt.TargetTeammate = FindNearestPlayerTeammate( "player", bot, 999999 )
+			end
 		end
 	end
 	
@@ -172,20 +229,20 @@ function controlBots ( bot, cmd )
 		if CurTime() > bot.targetFindDelay then
 			if bot:Team() != TEAM_UNDEAD then
 				
-				FindCadingSpotsInArea( bot, navmesh.GetNearestNavArea( bot.FollowerEnt.TargetArsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ) )
+				bot.FollowerEnt.TargetArsenal:FindCadingSpots(navmesh.GetNearestNavArea( bot.FollowerEnt.TargetArsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ))
 				
 				timer.Simple( 0, function ()
 					if !IsValid( bot ) or !IsValid(bot.FollowerEnt.TargetArsenal) then return end
 					
-					if bot.UnCheckableAreas[1] != nil then
-						table.Empty(bot.UnCheckableAreas)
+					if bot.FollowerEnt.TargetArsenal.UnCheckableAreas[1] != nil then
+						table.Empty(bot.FollowerEnt.TargetArsenal.UnCheckableAreas)
 					end
 					
-					table.insert( bot.UnCheckableAreas, navmesh.GetNearestNavArea( bot.FollowerEnt.TargetArsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ) )
+					table.insert( bot.FollowerEnt.TargetArsenal.UnCheckableAreas, navmesh.GetNearestNavArea( bot.FollowerEnt.TargetArsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ) )
 				end )
 				
-				for s, spot in ipairs(bot.DefendingSpots) do
-					if bot.DefendingSpots[1] != nil then
+				for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
+					if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
 						--debugoverlay.Box(Vector (0,0,0), navmesh.GetNavArea( spot, 3 ):GetCorner( 0 ), Vector(navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).x, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).y, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).z + 200), 0, Color( 255, 255, 255 ), true )
 				
 						local tr = util.TraceHull( {
@@ -198,12 +255,12 @@ function controlBots ( bot, cmd )
 						} )
 						
 						if tr.Entity:IsNailed()  then
-							if table.HasValue(bot.CadingSpots, spot) then
-								table.remove (bot.CadingSpots, table.KeyFromValue(bot.DefendingSpots, spot))
+							if table.HasValue(bot.FollowerEnt.TargetArsenal.CadingSpots, spot) then
+								table.remove (bot.FollowerEnt.TargetArsenal.CadingSpots, table.KeyFromValue(bot.FollowerEnt.TargetArsenal.DefendingSpots, spot))
 							end
 						else
-							if !table.HasValue(bot.CadingSpots, spot) then
-								table.insert (bot.CadingSpots, spot)
+							if !table.HasValue(bot.FollowerEnt.TargetArsenal.CadingSpots, spot) then
+								table.insert (bot.FollowerEnt.TargetArsenal.CadingSpots, spot)
 							end
 						end
 					end
@@ -211,35 +268,35 @@ function controlBots ( bot, cmd )
 				--PrintTable (bot.CadingSpots)
 			end
 		end
-	else
-		if bot.DefendingSpots[1] != nil then
-			table.Empty(bot.DefendingSpots)
+	end --[[else
+		if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+			table.Empty(bot.FollowerEnt.TargetArsenal.DefendingSpots)
 		end
 		if bot.CadingSpots[1] != nil then
 			table.Empty(bot.CadingSpots)
 		end
-		if bot.UnCheckableAreas[1] != nil then
-			table.Empty(bot.UnCheckableAreas)
+		if bot.FollowerEnt.TargetArsenal.UnCheckableAreas[1] != nil then
+			table.Empty(bot.FollowerEnt.TargetArsenal.UnCheckableAreas)
 		end
 	end
 	
 	if bot:Team() == TEAM_UNDEAD then
-		if bot.DefendingSpots[1] != nil then
-			table.Empty(bot.DefendingSpots)
+		if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+			table.Empty(bot.FollowerEnt.TargetArsenal.DefendingSpots)
 		end
 		if bot.CadingSpots[1] != nil then
 			table.Empty(bot.CadingSpots)
 		end
-		if bot.UnCheckableAreas[1] != nil then
-			table.Empty(bot.UnCheckableAreas)
+		if bot.FollowerEnt.TargetArsenal.UnCheckableAreas[1] != nil then
+			table.Empty(bot.FollowerEnt.TargetArsenal.UnCheckableAreas)
 		end
-	end
+	end]]
 	
-	--print (#bot.DefendingSpots)
+	--print (#bot.FollowerEnt.TargetArsenal.DefendingSpots)
 	
 	if IsValid (bot:GetActiveWeapon()) and bot:Team() != TEAM_UNDEAD then
 		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee then
-			cmd:SetButtons (IN_RELOAD)
+			bot.reloadHold = true
 		end
 	end
 	
@@ -254,17 +311,17 @@ function controlBots ( bot, cmd )
 	end
 	
 	
-	if bot:Team() != TEAM_UNDEAD then
-		if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
-			SayPresetMessage(bot, 0, true)
+	if bot:Team() != TEAM_UNDEAD and bot.Skill > 25 then
+		if bot:Health() <= (2 / 4 * bot:GetMaxHealth()) then
+			SayPresetMessage(bot, MSG_MEDIC, true)
 		elseif bot.prevSay == 0 then
 			bot.prevSay = -1
 		end
 		
-		if IsValid (bot.FollowerEnt.Target) then
-			if bot.FollowerEnt.Target:Team() == TEAM_UNDEAD then
-				if bot.FollowerEnt.Target:GetZombieClassTable().Boss and bot.prevSay == -1 then
-					SayPresetMessage(bot, 1, true, bot.FollowerEnt.Target:GetZombieClassTable().Name)
+		if IsValid (bot.FollowerEnt.TargetEnemy) then
+			if bot.FollowerEnt.TargetEnemy:Team() == TEAM_UNDEAD then
+				if bot.FollowerEnt.TargetEnemy:GetZombieClassTable().Boss and bot.prevSay == -1 then
+					SayPresetMessage(bot, MSG_BOSS_OUTSIDE, true)
 				end
 			end
 		end
@@ -283,277 +340,37 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
-	if bot.canAttackTimer then
-		if bot.attackTimer then
-			bot.canAttackTimer = false
-			
-			bot.attackHold = true
-			
-			timer.Simple (0.10, function()
-				if !IsValid (bot) then return end
-				bot.attackHold = false
-				timer.Simple (0.10, function()
-					if !IsValid (bot) then return end
-					bot.attackTimer = false
-					bot.canAttackTimer = true
-				end)
-			end)
-		end
-	end
-	
-	if bot.canZoomTimer then
-		if bot.zoomTimer then
-			bot.canZoomTimer = false
-			
-			bot.zoomHold = true
-			
-			timer.Simple (0.10, function()
-				if !IsValid (bot) then return end
-				bot.zoomHold = false
-				timer.Simple (0.10, function()
-					if !IsValid (bot) then return end
-					bot.zoomTimer = false
-					bot.canZoomTimer = true
-				end)
-			end)
-		end
-	end
-	
-	if bot.canUseTimer then
-		if bot.useTimer then
-			bot.canUseTimer = false
-			
-			bot.useHold = true
-			
-			
-			timer.Simple (0.10, function()
-				if !IsValid (bot) then return end
-				bot.useHold = false
-				timer.Simple (0.10, function()
-					if !IsValid (bot) then return end
-					bot.useTimer = false
-					bot.canUseTimer = true
-				end)
-			end)
-		end
-	end
-	
-	if bot.canAttack2Timer then
-		if bot.attack2Timer then
-			bot.canAttack2Timer = false
-			
-			bot.attack2Hold = true
-			
-			
-			timer.Simple (0.10, function()
-				if !IsValid (bot) then return end
-				bot.attack2Hold = false
-				timer.Simple (0.10, function()
-					if !IsValid (bot) then return end
-					bot.attack2Timer = false
-					bot.canAttack2Timer = true
-				end)
-			end)
-		end
-	end
-	
-	if bot.canDeployTimer then
-		if bot.deployTimer then
-			bot.canDeployTimer = false
-			
-			bot.lookAngle = Angle (70, bot:EyeAngles().y, bot:EyeAngles().z)
-			bot.crouchHold = true
-			timer.Simple (0.75, function()
-				if !IsValid (bot) then return end
-				bot.crouchHold = false
-				timer.Simple (0, function()
-					if !IsValid (bot) then return end
-					bot.attackHold = true
-					bot.lookAngle = Angle (0, bot:EyeAngles().y, bot:EyeAngles().z)
-					timer.Simple (0.5, function()
-						if !IsValid (bot) then return end
-						bot.attackHold = false
-						bot.Task = 1
-						bot.deployTimer = false --comment this out if things no work properly
-						bot.canDeployTimer = true
-					end)
-				end)
-			end)
-		end
-	end
-	
-	if bot.canCJumpTimer and bot:GetZombieClassTable().Name != "Crow" then
-		if bot.cJumpTimer then
-			bot.canCJumpTimer = false
-			bot.crouchHold = true
-			bot.useHold = true
-			
-			timer.Simple (0.01, function()
-				if !IsValid(bot) then return end
-				bot.useHold = false
-			end)
-			
-			timer.Simple (0.05, function()
-				if !IsValid(bot) then return end
-				bot.jumpHold = true
-				timer.Simple (0.0125, function()
-					if !IsValid(bot) then return end
-					bot.jumpHold = false
-					timer.Simple (1, function()
-						if !IsValid(bot) then return end
-						
-						if bot:GetVelocity():Length() < 10 then
-							bot.strafeType = 0
-							--bot.useHold = true
-							
-							--[[timer.Simple (0.01, function()
-								if !IsValid (bot) then return end
-								bot.useHold = false
-							end)]]
-							
-							timer.Simple (0.5, function()
-								if !IsValid(bot) then return end
-								bot.strafeType = 1
-								timer.Simple (0.75, function()
-									if !IsValid(bot) then return end
-									bot.strafeType = -1
-									
-									bot.crouchHold = false
-									timer.Simple (0.5, function()
-										if !IsValid(bot) then return end
-										bot.cJumpTimer = false
-										bot.canCJumpTimer = true
-									end)
-								end)
-							end)
-						else
-						
-						bot.crouchHold = false
-						timer.Simple (0.10, function()
-							if !IsValid(bot) then return end
-							bot.cJumpTimer = false
-							bot.canCJumpTimer = true
-							end)
-						end
-					end)
-				end)
-			end)
-		end
-	end
-	
-	if bot.attackHold then
-		cmd:SetButtons( IN_ATTACK )
-	end
-	
-	if bot.attack2Hold then
-		if bot.attackHold then
-			cmd:SetButtons(bit.bor ( IN_ATTACK, IN_ATTACK2 ))
-		else
-			cmd:SetButtons(bit.bor ( IN_SPEED, IN_ATTACK2 ))
-		end
-	end
-	
-	if bot.jumpHold then
-		cmd:SetButtons( IN_JUMP )
-	end
-	
-	if bot.crouchHold then
-		if bot.attackHold then
-			cmd:SetButtons( bit.bor( IN_DUCK, IN_ATTACK ) )
-		elseif bot.jumpHold then
-			cmd:SetButtons( bit.bor( IN_DUCK, IN_JUMP ) )
-		else
-			cmd:SetButtons( IN_DUCK )
-		end
-	end
-	
-	if bot.useHold then
-		if bot.crouchHold then
-			cmd:SetButtons( bit.bor( IN_USE, IN_DUCK ) )
-		else
-			cmd:SetButtons( IN_USE )
-		end
-	end
-	
-	if bot.zoomHold then
-		if bot.crouchHold then
-			cmd:SetButtons( bit.bor( IN_ZOOM, IN_DUCK ) )
-		else
-			cmd:SetButtons( IN_ZOOM )
-		end
-	end
-	
-	
-	if bot.moveType == -1 then
-		bot.cJumpDelay = 0
-		cmd:SetForwardMove( 0 )
-		cmd:SetSideMove( 0 )
-	elseif bot.moveType == 0 then
-		cmd:SetForwardMove( 1000 )
-		cmd:SetSideMove( 0 )
-	elseif bot.moveType == 1 then
-		cmd:SetForwardMove( 1000 )
-		cmd:SetSideMove( -1000 )
-	elseif bot.moveType == 2 then
-		cmd:SetForwardMove( 0 )
-		cmd:SetSideMove( -1000 )
-	elseif bot.moveType == 3 then
-		cmd:SetForwardMove( -1000 )
-		cmd:SetSideMove( -1000 )
-	elseif bot.moveType == 4 then
-		cmd:SetForwardMove( -1000 )
-		cmd:SetSideMove( 0 )
-	elseif bot.moveType == 5 then
-		cmd:SetForwardMove( -1000 )
-		cmd:SetSideMove( 1000 )
-	elseif bot.moveType == 6 then
-		cmd:SetForwardMove( 0 )
-		cmd:SetSideMove( 1000 )
-	elseif bot.moveType == 7 then
-		cmd:SetForwardMove( 1000 )
-		cmd:SetSideMove( 1000 )
-	end
-	
-	
-	if bot.strafeType == 0 then
-		cmd:SetSideMove( 1000 )
-	elseif bot.strafeType == 1 then
-		cmd:SetSideMove( -1000 )
-	else
-		--cmd:SetSideMove( 0 )
-	end
-	
 	--Task 0
 	--Humans: Hit zombies with melee weapon
 	--Zombies: Go to nearest target
 		if bot.Task == 0 then
 			if bot:Team() != TEAM_UNDEAD then
-				--if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 500 then
+				--if bot:GetPos():Distance( bot.FollowerEnt.TargetEnemy:GetPos() ) > 500 then
 					--cmd:SetForwardMove( 1000 )
 					--
 					
 					--if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-						--DoLadderMovement( bot, cmd, curgoal )
+						--bot:DoLadderMovement( cmd, curgoal )
 						
 					--else
 						--CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 					--end
-				--elseif bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 250 then 
+				--elseif bot:GetPos():Distance( bot.FollowerEnt.TargetEnemy:GetPos() ) > 250 then 
 					--bot.moveType = -1
 					
-					--bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
+					--bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
 					
 					--bot.attackTimer = true
 				--else
 					--bot.moveType = 4
 					
-					--bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
+					--bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
 					
 					--bot.attackTimer = true
 				--end
 				
-				local myTarget = bot.FollowerEnt.Target
+				local myTarget = bot.FollowerEnt.TargetEnemy
 				
 				if bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or !bot:GetActiveWeapon().IsMelee or bot:GetActiveWeapon():GetClass() == "weapon_zs_hammer" or !IsValid (myTarget) or myTarget:Health() <= 0 then
 					--cmd:SetSideMove( 0 )
@@ -561,10 +378,10 @@ function controlBots ( bot, cmd )
 				end
 				
 				if IsValid (myTarget) then
-				
+					bot.Disposition = 0
 					if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-						DoLadderMovement( bot, cmd, curgoal )	
+						bot:DoLadderMovement( cmd, curgoal )	
 			
 					else
 						bot.b = true
@@ -577,7 +394,7 @@ function controlBots ( bot, cmd )
 
 							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
 						
-							bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
+							bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
 							
 							--cmd:SetSideMove( 1000 )
 						else
@@ -585,7 +402,7 @@ function controlBots ( bot, cmd )
 						
 							bot.moveType = -1
 				
-							bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
+							bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
 							
 							--cmd:SetSideMove( 1000 )
 						end
@@ -596,110 +413,81 @@ function controlBots ( bot, cmd )
 					end
 				end
 			
-			elseif IsValid( bot.FollowerEnt.Target ) then
-				local myTarget = bot.FollowerEnt.Target
+			elseif IsValid( bot.FollowerEnt.TargetEnemy ) then
+				local myTarget = bot.FollowerEnt.TargetEnemy
 				
-				if bot:GetZombieClassTable().Name != "Crow" and myTarget:Health() > 0 then
+				if bot:GetZombieClassTable().Name != "Crow" and myTarget:Alive() then
 					
-					--print (bot.FollowerEnt.TargetPosition)
+					local tr = util.TraceLine( {
+						start = bot:EyePos(),
+						endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+						filter = function( ent ) if ( ent != myTarget and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+					} )
+					
 					if !GAMEMODE:GetWaveActive() then
-				
-						local tr = util.TraceLine( {
-							start = bot:EyePos(),
-							endpos = AimPoint( bot ),
-							filter = function( ent ) if ( ent != myTarget and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-						} )
-				
 						if tr.Hit and bot.FollowerEnt.TargetPosition != nil then
 							bot.Task = 1
 						end
 					end
-			
+					
+					local stoppingDistance = 0
+					local attackDistance = 0
+					
 					if bot:GetZombieClassTable().Name != "Fast Zombie" and bot:GetZombieClassTable().Name != "Wraith" then
-						if bot:GetPos():Distance( myTarget:GetPos() ) > 45 then -- was 65
-							if bot.lookPos == nil then
-								CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-							else
-								bot.moveType = -1
-							
-							end
-					
-							if bot:GetMoveType() == MOVETYPE_LADDER then
-						
-								DoLadderMovement( bot, cmd, curgoal )	
-						
-							else
-								bot.b = true
-							end
-						else
-							bot.moveType = -1
-						
-							bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-						end
+						stoppingDistance = 45 -- was 65
+						attackDistance = 150
 					end
-				
 					if bot:GetZombieClassTable().Name == "Fast Zombie" or bot:GetZombieClassTable().Name == "Wraith" then
-						if bot:GetPos():Distance( myTarget:GetPos() ) > 45 then
-							if bot.lookPos == nil then
-								CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-							else
-								bot.moveType = -1
-							
-							end
+						stoppingDistance = 45
+						attackDistance = 45
+					end
 					
-							if bot:GetMoveType() == MOVETYPE_LADDER then
-						
-								DoLadderMovement( bot, cmd, curgoal )	
-						
-							else
-								bot.b = true
-							end
+					if bot:GetPos():Distance( myTarget:GetPos() ) > stoppingDistance then
+						if bot.lookPos == nil then
+							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 						else
 							bot.moveType = -1
-						
-							bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
 						end
-					end
-			
-					if !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER and IsValid(bot.attackProp) then
-						if bot:GetPos():Distance( bot.attackProp:GetPos() ) < 150 then
-							if bot.crouchHold then
-								cmd:SetButtons( bit.bor( IN_ATTACK, IN_DUCK ) )
-							else
-								cmd:SetButtons( IN_ATTACK )
-							end
-							--print (bot.attackProp)
+				
+						if bot:GetMoveType() == MOVETYPE_LADDER then
+					
+							bot:DoLadderMovement( cmd, curgoal )	
+					
 						else
-							--print ("noprop")
+							bot.b = true
 						end
-					end
-				
-					if bot:GetPos():Distance( myTarget:GetPos() ) < 150 and !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
-						if bot:GetZombieClassTable().Name != "Fast Zombie" and bot:GetZombieClassTable().Name != "Wraith" then
-							if bot.crouchHold then
-								cmd:SetButtons( bit.bor( IN_ATTACK, IN_DUCK ) )
-							else
-								cmd:SetButtons( IN_ATTACK )
-							end
-						end
-					end
-				
-					if bot:GetPos():Distance( myTarget:GetPos() ) < 45 and !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
-						if bot:GetZombieClassTable().Name == "Fast Zombie" or bot:GetZombieClassTable().Name == "Wraith" then
-							if bot.crouchHold then
-								cmd:SetButtons( bit.bor( IN_ATTACK, IN_DUCK ) )
-							else
-								cmd:SetButtons( IN_ATTACK )
-							end
-						end
+					else
+						bot.moveType = -1
+					
+						bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
 					end
 					
-					if bot:GetPos():Distance( myTarget:GetPos() ) >= 45 and bot:GetPos():Distance( myTarget:GetPos() ) < 400 and !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
+					if !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
+						debugoverlay.Box( bot:EyePos() + bot:EyeAngles():Forward() * 35, Vector(-25, -25, -25), Vector(25, 25, 25), 0, Color( 255, 255, 255, 0 ) )
+						local atr = util.TraceHull( {
+							start = bot:EyePos(),
+							endpos = bot:EyePos() + bot:EyeAngles():Forward() * 35,
+							mins = Vector(-25, -25, -25),
+							maxs = Vector(25, 25, 25),
+							ignoreworld = true,
+							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" or ent:GetClass() == "func_door_rotating" ) then return true end end
+						} )
+						
+						if IsValid(atr.Entity) then
+							bot.attackTimer = true
+						end
+					end
+				
+					if bot:GetPos():Distance( myTarget:GetPos() ) < attackDistance and !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
+						bot.attackTimer = true
+					end
+					
+					if bot:GetPos():Distance( myTarget:GetPos() ) >= 45 and bot:GetPos():Distance( myTarget:GetPos() ) < 400 and !tr.Hit and !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
 						if bot:GetZombieClassTable().Name == "Fast Zombie" then
-							bot.lookAngle = (AimPoint( bot ) - Vector(bot:EyePos().x, bot:EyePos().y, bot:EyePos().z - (bot:GetPos():Distance( myTarget:GetPos()) / 4 ) ) ):Angle()
+							bot.lookAngle = (bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - Vector(bot:EyePos().x, bot:EyePos().y, bot:EyePos().z - (bot:GetPos():Distance( myTarget:GetPos()) / 4 ) ) ):Angle()
 							bot.attack2Timer = true
 						else
-							bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
+							bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
 						end
 					end
 					
@@ -723,16 +511,23 @@ function controlBots ( bot, cmd )
 				
 					if bot.lookPos != nil then
 						bot.moveType = -1
-			
+						
 						bot.lookAngle = ((bot.lookPos - bot:EyePos()):Angle())
 				
-						if bot.crouchHold then
-							cmd:SetButtons( bit.bor( IN_ATTACK, IN_DUCK ) )
+						bot.attackTimer = true
+						
+						if IsValid(bot.lookProp) then
+							if bot.lookProp:GetClass() == "prop_physics" or bot.lookProp:GetClass() == "prop_physics_multiplayer" then
+								if bot:EyePos():Distance( bot.lookPos ) > (mr + 10) or !bot.lookProp:IsNailed() then
+									bot.lookPos = nil
+								end
+							end
+							if bot.lookProp:GetClass() == "func_breakable" then
+								if bot:EyePos():Distance( bot.lookPos ) > (mr + 10) then
+									bot.lookPos = nil
+								end
+							end
 						else
-							cmd:SetButtons( IN_ATTACK )
-						end
-					
-						if bot:EyePos():Distance( bot.lookPos ) > (mr + 10) or !IsValid(bot.lookProp) or !bot.lookProp:IsNailed() then
 							bot.lookPos = nil
 						end
 					else
@@ -740,33 +535,39 @@ function controlBots ( bot, cmd )
 						local tr = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot:EyePos() + bot:EyeAngles():Forward() * mr,
-							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
+							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
 						} )
-					
-						if tr.Entity:IsNailed() then
-							bot.lookPos = tr.HitPos
-							bot.lookProp = tr.Entity
-						else
-							local tr2 = util.TraceLine( {
-								start = bot:EyePos(),
-								endpos = bot:EyePos() + Angle(bot:EyeAngles().x - 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
-								filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
-							} )
-		
-							if tr2.Entity:IsNailed() then
+						
+						if IsValid(tr.Entity) then
+							if tr.Entity:IsNailed() or tr.Entity:GetClass() == "func_breakable" then
+								bot.lookPos = tr.HitPos
+								bot.lookProp = tr.Entity
+							end
+						end
+						
+						local tr2 = util.TraceLine( {
+							start = bot:EyePos(),
+							endpos = bot:EyePos() + Angle(bot:EyeAngles().x - 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
+							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+						} )
+						
+						if IsValid(tr2.Entity) then
+							if tr2.Entity:IsNailed() or tr2.Entity:GetClass() == "func_breakable" then
 								bot.lookPos = tr2.HitPos
 								bot.lookProp = tr2.Entity
-							else
-								local tr3 = util.TraceLine( {
-									start = bot:EyePos(),
-									endpos = bot:EyePos() + Angle(bot:EyeAngles().x + 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
-									filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
-							} )
-		
-								if tr3.Entity:IsNailed() then
-									bot.lookPos = tr3.HitPos
-									bot.lookProp = tr3.Entity
-								end
+							end
+						end
+						
+						local tr3 = util.TraceLine( {
+							start = bot:EyePos(),
+							endpos = bot:EyePos() + Angle(bot:EyeAngles().x + 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
+							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+						} )
+						
+						if IsValid(tr3.Entity) then
+							if tr3.Entity:IsNailed() or tr3.Entity:GetClass() == "func_breakable" then
+								bot.lookPos = tr3.HitPos
+								bot.lookProp = tr3.Entity
 							end
 						end
 					end
@@ -796,283 +597,198 @@ function controlBots ( bot, cmd )
 	
 	if bot.Task == 1 then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetArsenal
-			--bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(AimPoint( bot ))
+			if game.IsObj() or GAMEMODE.ZombieEscape then bot.Task = 12 end
 			
-			if IsValid (bot.FollowerEnt.Target) then
-				if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.Target:Health() > 0 then
-					local mtr = util.TraceLine( {
-						start = bot:EyePos(),
-						endpos = AimPoint( bot ),
-						filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-					} )
-					
-					if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
-						bot.Task = 0
-					end
-				end
-			end
-			
-			if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-				local tr = util.TraceLine( {
-					start = bot:EyePos(),
-					endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
-					filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and ent:GetClass() != "player" ) then return true end end
-				} )
+			if !game.IsObj() and !GAMEMODE.ZombieEscape then
+				local myTarget = bot.FollowerEnt.TargetArsenal
 				
-				debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
-				
-				if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-					if !tr.Hit then
-					
-						local tr2 = util.TraceLine( {
+				if IsValid (bot.FollowerEnt.TargetEnemy) then
+					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then
+						local mtr = util.TraceLine( {
 							start = bot:EyePos(),
-							endpos = AimPoint( bot ),
-							filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+							endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 						} )
 						
-						if tr2.Hit then
+						if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
+							bot.Task = 0
+						end
+					end
+				end
+				
+				if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
+					local tr = util.TraceLine( {
+						start = bot:EyePos(),
+						endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
+						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
+					} )
+					
+					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+					
+					if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
+						if !tr.Hit then
+						
+							local tr2 = util.TraceLine( {
+								start = bot:EyePos(),
+								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+							} )
+							
+							if tr2.Hit then
+								bot.Task = 9
+							end
+						end
+					else
+						if !tr.Hit then
 							bot.Task = 9
 						end
 					end
-				else
-					if !tr.Hit then
-						bot.Task = 9
-					end
 				end
-			end
-		
-			if IsValid (myTarget) then
-				if bot:GetPos():Distance( myTarget:GetPos() ) > 100 then
-
-					if bot:GetMoveType() == MOVETYPE_LADDER then
-						
-						DoLadderMovement( bot, cmd, curgoal )
-				
-					else
-						bot.b = true
-						
-						if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
+			
+				if IsValid (myTarget) then
+					local atr = util.TraceLine( {
+						start = bot:EyePos(),
+						endpos = myTarget:LocalToWorld(myTarget:OBBCenter()),
+						filter = function( ent ) if ( ent:IsWorld() ) then return true end end
+					} )
+					
+					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 or atr.Hit then
+						if bot:GetMoveType() == MOVETYPE_LADDER then
 							
-							local tr = util.TraceLine( {
-								start = bot:EyePos(),
-								endpos = AimPoint( bot ),
-								filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-							} )
+							bot:DoLadderMovement( cmd, curgoal )
+					
+						else
+							bot.b = true
 							
-							if bot.runAwayTimer <= 0 then
-								
-								if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 500 then
-									CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-									
-								elseif bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 150 then --was 250
-						
-									if !tr.Hit and bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
-											
-										bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-										ShootAtTarget( bot )
-										
-										CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
-									end
-								
-									if tr.Hit or bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
-										CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-										
-									end
-								else
-									--[[if !tr.Hit and bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
-									
-										bot.moveType = 4
-									
-										bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-										
-										ShootAtTarget( bot )
-									end]]
-								
-									--[[if tr.Hit or bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
-										CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-										
-									end]]
-									
-									bot.runAwayTimer = math.random(1, 3)
-								end
+							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
+							
+							if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and bot.runAwayTimer <= 0 then
+								bot.Disposition = 1
 							else
-								bot.runAwayTimer = bot.runAwayTimer - FrameTime()
-								--print ("running away" .. bot.runAwayTimer)
-								CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-								
-								if !bot:GetActiveWeapon().IsMelee then
-									for i, meleeWep in ipairs(bot:GetWeapons()) do 
-										if meleeWep.IsMelee then
-											bot:SelectWeapon(meleeWep)
-											
+								bot.Disposition = 0
+							end
+							
+							bot:RunAwayCheck( cmd )
+						end
+					elseif !atr.Hit then
+						bot.moveType = -1
+						bot.Disposition = 2
+						
+						if IsValid( bot:GetActiveWeapon() ) then
+							--print (bot.FollowerEnt.TargetCadingSpot)
+							if !bot:GetActiveWeapon().IsMelee then
+								bot.guardTimer = bot.guardTimer - FrameTime()
+								--print (bot.guardTimer)
+						
+								if bot.guardTimer <= 0 then
+									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+									bot.guardTimer = math.random( 5, 10 )
+									
+									bot.Task = 10
+								end
+							end
+						end
+						if bot:HasWeapon("weapon_zs_resupplybox") then
+							bot.Task = 3
+						end
+						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
+							curWep = bot:GetActiveWeapon()
+							
+							if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep.Base != "weapon_zs_basemelee" then
+								if OtherWeaponWithAmmo(bot) == nil then
+									bot.Task = 8
+								end
+							end
+							
+							if curWep.IsMelee then
+								if OtherWeaponWithAmmo(bot) == nil then
+									for i, wep in ipairs(bot:GetWeapons()) do
+										if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep.Base != "weapon_zs_basemelee" then
+											bot:SelectWeapon(wep)
+											bot.Task = 8
 											break
 										end
 									end
 								end
 							end
-						else
-							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 						end
+							
+						if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 and IsValid(bot.FollowerEnt.TargetArsenal) then
+							if IsValid (bot.FollowerEnt.TargetCadingProp) and bot.BuffMuscular and bot.FollowerEnt.TargetArsenal.CadingSpots[1] != nil then
+								if bot:HasWeapon("weapon_zs_hammer") then
+									bot.Task = 6
+								end	
+							end
+						end
+						if IsValid (bot.FollowerEnt.TargetNailedProp) and !bot.BuffMuscular then
+							if bot:HasWeapon("weapon_zs_hammer") and bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
+								bot.Task = 5
+							end	
+						end
+						
+						if bot.canShouldGoOutside then
+							if math.random (1, 4) <= 3 then
+								bot.shouldGoOutside = true
+								--print ("I should go outside")
+							else
+								bot.shouldGoOutside = false
+								--print ("I shouldn't go outside")
+							end
+							bot.canShouldGoOutside = false
+						end
+						
+						if IsValid (myTarget) then
+							if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and bot.shouldGoOutside then
+								bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
+								bot.Task = 4
+							end
+						end
+					end
+					
+					bot:CheckPropPhasing( cmd )
+					
+					--debugoverlay.Box( bot:GetPos(), Vector( -18, -18, 0 ), Vector( 18, 18, 73 ),0, Color( 255, 255, 255 ), false )
+					
+				else--if GAMEMODE:GetWave() != 0 then
+					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
+					bot.Task = 4
+				end
+			end
+			
+		elseif bot:GetZombieClassTable().Name != "Crow" then
+			local myTarget = bot.FollowerEnt.TargetPosition
+			
+			if IsValid( bot.FollowerEnt.TargetEnemy ) then 
+				local tr = util.TraceLine( {
+					start = bot:EyePos(),
+					endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+					filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+				} )
+				
+				if !tr.Hit then
+					bot.Task = 0
+				end
+			end
+			
+			if GAMEMODE:GetWaveActive() or myTarget == nil then
+				bot.Task = 0
+			end
+			
+			if myTarget != nil then
+				if bot:GetPos():Distance( myTarget ) > 45 then		
+					if bot:GetMoveType() == MOVETYPE_LADDER then
+						
+						bot:DoLadderMovement( cmd, curgoal )	
+						
+					else
+						bot.b = true
+						
+						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
 					end
 				else
 					bot.moveType = -1
 					
-					if IsValid( bot:GetActiveWeapon() ) then
-						--print (bot.FollowerEnt.TargetCadingSpot)
-						if !bot:GetActiveWeapon().IsMelee then
-							bot.guardTimer = bot.guardTimer - FrameTime()
-							--print (bot.guardTimer)
-					
-							if bot.guardTimer <= 0 then
-								bot.FollowerEnt.TargetCadingSpot = table.Random(bot.DefendingSpots)
-								bot.guardTimer = math.random( 5, 10 )
-								
-								bot.Task = 10
-							end
-						end
-					end
-					if bot:HasWeapon("weapon_zs_resupplybox") then
-						bot.Task = 3
-					end
-					if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
-						curWep = bot:GetActiveWeapon()
-						
-						if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep.Base != "weapon_zs_basemelee" then
-							if OtherWeaponWithAmmo(bot) == nil then
-								bot.Task = 8
-							end
-						end
-						
-						if curWep.IsMelee then
-							if OtherWeaponWithAmmo(bot) == nil then
-								for i, wep in ipairs(bot:GetWeapons()) do
-									if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep.Base != "weapon_zs_basemelee" then
-										bot:SelectWeapon(wep)
-										bot.Task = 8
-										break
-									end
-								end
-							end
-						end
-					end
-						
-					if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 then
-						if IsValid (bot.FollowerEnt.TargetCadingProp) and bot.BuffMuscular and bot.CadingSpots[1] != nil then
-							if bot:HasWeapon("weapon_zs_hammer") then
-								bot.Task = 6
-							end	
-						end
-					end
-					if IsValid (bot.FollowerEnt.TargetNailedProp) and !bot.BuffMuscular then
-						if bot:HasWeapon("weapon_zs_hammer") and bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
-							bot.Task = 5
-						end	
-					end
-					
-					if bot.canShouldGoOutside then
-						if math.random (1, 4) <= 3 then
-							bot.shouldGoOutside = true
-							--print ("I should go outside")
-						else
-							bot.shouldGoOutside = false
-							--print ("I shouldn't go outside")
-						end
-						bot.canShouldGoOutside = false
-					end
-				
-					if IsValid (myTarget) then
-						if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and bot.shouldGoOutside then
-							bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
-							bot.Task = 4
-						end
-					end
-					
-					if bot:GetMoveType() == MOVETYPE_LADDER then
-							
-						DoLadderMovement( bot, cmd, curgoal )
-				
-					else
-						bot.b = true
-						
-						if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-					
-							local tr = util.TraceLine( {
-								start = bot:EyePos(),
-								endpos = AimPoint( bot ),
-								filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-							} )
-							
-							if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 500 then
-								bot.moveType = -1
-							elseif bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 250 then
-							
-								if !tr.Hit then
-						
-									bot.moveType = -1
-									
-									bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-					
-									ShootAtTarget( bot )
-								else
-									bot.moveType = -1
-								end
-							else
-								if !tr.Hit then
-						
-									bot.moveType = 4
-									
-									bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-					
-									ShootAtTarget( bot )
-								else
-									bot.moveType = -1
-								end
-							end
-						end
-					end
-				end
-				
-				CheckPropPhasing (bot, cmd)
-				
-				--debugoverlay.Box( bot:GetPos(), Vector( -18, -18, 0 ), Vector( 18, 18, 73 ),0, Color( 255, 255, 255 ), false )
-				
-			else--if GAMEMODE:GetWave() != 0 then
-				bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
-				bot.Task = 4
-			end
-			
-		elseif bot:GetZombieClassTable().Name != "Crow" then
-			
-			local myTarget = bot.FollowerEnt.TargetPosition
-			
-			if IsValid( bot.FollowerEnt.Target ) then 
-				local tr = util.TraceLine( {
-					start = bot:EyePos(),
-					endpos = AimPoint( bot ),
-					filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-				} )
-			
-				if GAMEMODE:GetWaveActive() or !tr.Hit or bot.myTarget == nil then
-					bot.Task = 0
-				end
-				
-				if bot.myTarget != nil then
-					if bot:GetPos():Distance( bot.myTarget ) > 45 then		
-						if bot:GetMoveType() == MOVETYPE_LADDER then
-			
-							DoLadderMovement( bot, cmd, curgoal )	
-			
-						else
-							bot.b = true
-			
-							CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-						end
-					else
-						bot.moveType = -1
-				
-						bot.lookAngle.y = ( bot:GetPos() - bot.myTarget ):GetNormal():Angle().y
-					end
+					bot.lookAngle.y = ( bot:GetPos() - myTarget ):GetNormal():Angle().y
 				end
 			end
 		end
@@ -1086,6 +802,8 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetTeammate
 			
 			if bot:HasWeapon("weapon_zs_medicalkit") then
+				
+				bot.Disposition = 3
 				
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit" then
 					bot.lastWeapon = bot:GetActiveWeapon()
@@ -1114,7 +832,7 @@ function controlBots ( bot, cmd )
 					
 					if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-						DoLadderMovement( bot, cmd, curgoal )
+						bot:DoLadderMovement( cmd, curgoal )
 				
 					else
 						bot.b = true
@@ -1133,7 +851,7 @@ function controlBots ( bot, cmd )
 					end
 				end
 				
-				CheckPropPhasing (bot, cmd)
+				bot:CheckPropPhasing( cmd )
 			else
 				if IsValid (bot.lastWeapon) then
 					cmd:SelectWeapon (bot.lastWeapon)
@@ -1167,142 +885,91 @@ function controlBots ( bot, cmd )
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
-			if GAMEMODE:GetWave() == 0 and IsValid( bot.FollowerEnt.TargetArsenal ) then
-				bot.newPointTimer = 15
-				bot.Task = 1
+			if IsValid (bot.FollowerEnt.TargetArsenal) then
+				if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) or GAMEMODE:GetWaveActive() or GAMEMODE:GetWave() == 0 then
+					bot.newPointTimer = 15
+					bot.Task = 1
+				end
 			end
 			
 			bot.newPointTimer = bot.newPointTimer - FrameTime()
 			
-			if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-				local tr = util.TraceLine( {
-					start = bot:EyePos(),
-					endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
-					filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and ent:GetClass() != "player" ) then return true end end
-				} )
+			if bot:GetMoveType() == MOVETYPE_LADDER then
+			
+				bot:DoLadderMovement( cmd, curgoal )
 				
-				debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+			else
+				bot.b = true
 				
-				if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-					if !tr.Hit then
+				CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
+				
+				if bot.runAwayTimer <= 0 then
+					if bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
+						bot.Disposition = 1
+					else
+						bot.Disposition = 0
+					end
+				end
+				
+				if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
+					local tr = util.TraceLine( {
+						start = bot:EyePos(),
+						endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
+						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
+					} )
 					
-						local tr2 = util.TraceLine( {
-							start = bot:EyePos(),
-							endpos = AimPoint( bot ),
-							filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-						} )
+					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+					
+					if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
+						if !tr.Hit then
 						
-						if tr2.Hit then
+							local tr2 = util.TraceLine( {
+								start = bot:EyePos(),
+								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+							} )
+							
+							if tr2.Hit then
+								bot.Task = 9
+							end
+						end
+					else
+						if !tr.Hit then
 							bot.Task = 9
 						end
 					end
-				else
-					if !tr.Hit then
-						bot.Task = 9
-					end
-				end
-			end
-			
-			if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):Distance( Vector( myTarget.x, myTarget.y, 0 ) ) < 20 or bot.newPointTimer <= 0 then
-				bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
-				bot.FollowerEnt:ComputePath (bot.FollowerEnt.P, myTarget)
-				
-				if bot.newPointTimer <= 0 and GetConVar( "zs_bot_debug" ):GetInt() != 0 then 
-					bot:Say("Took too long to get to point, going to new one.") 
-					bot:EmitSound( "buttons/button11.wav", 75, 100, 1, CHAN_AUTO )
 				end
 				
-				bot.newPointTimer = 15
-			end
-			
-			if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-				local tr = util.TraceLine( {
-					start = bot:EyePos(),
-					endpos = AimPoint( bot ),
-					filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-				} )
-				
-				if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.Target:Health() > 0 then					
-					if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
-						bot.Task = 0
-					end
-				end
-				
-				if bot:GetMoveType() == MOVETYPE_LADDER then
+				if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):Distance( Vector( myTarget.x, myTarget.y, 0 ) ) < 20 or bot.newPointTimer <= 0 then
+					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
+					bot.FollowerEnt:ComputePath (bot.FollowerEnt.P, bot.FollowerEnt.TargetPosition)
 					
-					DoLadderMovement( bot, cmd, curgoal )
-				
-				else
-					bot.b = true
+					if bot.newPointTimer <= 0 and GetConVar( "zs_bot_debug" ):GetInt() != 0 then 
+						print(bot:Name() .. " took too long to get to wander point, going to new one.") 
+						bot:EmitSound( "buttons/button11.wav", 75, 100, 1, CHAN_AUTO )
+					end
 					
-					if bot.runAwayTimer <= 0 then
-						if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 500 then
-							CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-							
-						elseif bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 150 then --was 250
+					bot.newPointTimer = 15
+				end
 				
-							if !tr.Hit and bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
-									
-								bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-								ShootAtTarget( bot )
-								
-								CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
-							end
-						
-							if tr.Hit or bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
-								CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-								
-							end
-						else
-							--[[if !tr.Hit and bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
-							
-								bot.moveType = 4
-							
-								bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-								
-								ShootAtTarget( bot )
-							end]]
-						
-							--[[if tr.Hit or bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
-								CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-								
-							end]]
-							
-							bot.runAwayTimer = math.random(1, 3)
-						end
-					else
-						bot.runAwayTimer = bot.runAwayTimer - FrameTime()
-						--print ("running away" .. bot.runAwayTimer)
-						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-						
-						if !bot:GetActiveWeapon().IsMelee then
-							for i, meleeWep in ipairs(bot:GetWeapons()) do 
-								if meleeWep.IsMelee then
-									bot:SelectWeapon(meleeWep)
-									
-									break
-								end
-							end
+				if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
+					local tr = util.TraceLine( {
+						start = bot:EyePos(),
+						endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+					} )
+					
+					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then					
+						if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
+							bot.Task = 0
 						end
 					end
 				end
-			else
-				if bot:GetMoveType() == MOVETYPE_LADDER then
-					DoLadderMovement( bot, cmd, curgoal )
-				else
-					bot.b = true
-	
-					CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-				end
 			end
 			
-			CheckPropPhasing (bot, cmd)
 			
-			if IsValid (bot.FollowerEnt.TargetArsenal) then
-				if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) or GAMEMODE:GetWaveActive() then
-					bot.Task = 1
-				end
-			end
+			bot:RunAwayCheck( cmd )
+			bot:CheckPropPhasing( cmd )
 		end
 	end
 	
@@ -1312,6 +979,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 5 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetNailedProp
+			bot.Disposition = 0
 			
 			if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
 				
@@ -1356,11 +1024,7 @@ function controlBots ( bot, cmd )
 			
 					bot.lookAngle = ((bot.lookPos - bot:EyePos()):Angle())
 				
-					if bot.crouchHold then
-						cmd:SetButtons( bit.bor( IN_ATTACK, IN_DUCK ) )
-					else
-						cmd:SetButtons( IN_ATTACK )
-					end
+					bot.attackTimer = true
 					
 					if bot:EyePos():Distance( bot.lookPos ) > (mr + 10) or !IsValid(bot.lookProp) or !bot.lookProp:IsNailed() or bot.lookProp != myTarget then
 						bot.lookPos = nil
@@ -1421,6 +1085,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 6 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingProp
+			bot.Disposition = 0
 			
 			if IsValid(myTarget) then
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" then
@@ -1432,7 +1097,7 @@ function controlBots ( bot, cmd )
 		
 					if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-						DoLadderMovement( bot, cmd, curgoal )
+						bot:DoLadderMovement( cmd, curgoal )
 					
 					else
 						bot.b = true
@@ -1449,7 +1114,7 @@ function controlBots ( bot, cmd )
 					bot.useTimer = true
 				end
 				
-				CheckPropPhasing (bot, cmd)
+				bot:CheckPropPhasing( cmd )
 				
 				if myTarget:GetHolder() == bot then
 					bot.Task = 7
@@ -1472,8 +1137,8 @@ function controlBots ( bot, cmd )
 				bot.Task = 1
 			end
 			
-			if bot.CadingSpots[1] != nil then
-				myTarget = bot.CadingSpots[1]
+			if bot.FollowerEnt.TargetArsenal.CadingSpots[1] != nil then
+				myTarget = bot.FollowerEnt.TargetArsenal.CadingSpots[1]
 				
 				local oof = bot:GetPos()
 				
@@ -1485,7 +1150,7 @@ function controlBots ( bot, cmd )
 					
 					if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-						DoLadderMovement( bot, cmd, curgoal )
+						bot:DoLadderMovement( cmd, curgoal )
 					
 					else
 						bot.b = true
@@ -1510,8 +1175,8 @@ function controlBots ( bot, cmd )
 					
 					print (tr.StartPos:Distance( tr.HitPos ))
 					--print (Vector(0, 0, bot.heldProp:GetPos().z + bot.heldProp:GetCollisionBounds().z))
-					if !bot.attack2Hold and tr.StartPos:Distance( tr.HitPos ) <= 10 then
-						cmd:SetButtons( IN_SPEED )
+					if tr.StartPos:Distance( tr.HitPos ) <= 10 then
+						bot.sprintHold = true
 					end
 					bot.attack2Timer = true
 					--bot.lookAngle = ((myTarget - bot:EyePos()):Angle())
@@ -1550,11 +1215,12 @@ function controlBots ( bot, cmd )
 	if bot.Task == 8 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetResupply
+			bot.Disposition = 0
 			
 			if IsValid(myTarget) then
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-					DoLadderMovement( bot, cmd, curgoal )
+					bot:DoLadderMovement( cmd, curgoal )
 					
 				else
 					bot.b = true
@@ -1575,7 +1241,7 @@ function controlBots ( bot, cmd )
 				bot.Task = 1
 			end
 			
-			CheckPropPhasing (bot, cmd)
+			bot:CheckPropPhasing( cmd )
 		end
 	end
 	
@@ -1585,6 +1251,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 9 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetLootItem
+			bot.Disposition = 3
 			
 			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 then
 				bot.moveType = -1
@@ -1596,7 +1263,7 @@ function controlBots ( bot, cmd )
 				
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 						
-					DoLadderMovement( bot, cmd, curgoal )
+					bot:DoLadderMovement( cmd, curgoal )
 				
 				else
 					bot.b = true
@@ -1629,7 +1296,7 @@ function controlBots ( bot, cmd )
 				bot.Task = 1
 			end
 			
-			CheckPropPhasing (bot, cmd)
+			bot:CheckPropPhasing( cmd )
 		end
 	end
 	
@@ -1639,19 +1306,20 @@ function controlBots ( bot, cmd )
 	if bot.Task == 10 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
+			bot.Disposition = 2
 			
-			if bot.DefendingSpots[1] != nil then
+			if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
 				
 				bot.guardTimer = bot.guardTimer - FrameTime()
 				--print (bot.guardTimer)
 				
 				if bot.guardTimer <= 0 then
 					if math.random(0, 1) == 0 then
-						bot.guardTimer = math.random( 5, 10 )
-					
 						bot.Task = 1
+						
+						bot.guardTimer = math.random( 5, 10 )
 					else
-						myTarget = table.Random(bot.DefendingSpots)
+						bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
 						
 						bot.guardTimer = math.random( 5, 10 )					
 					end
@@ -1660,87 +1328,21 @@ function controlBots ( bot, cmd )
 				
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-					DoLadderMovement( bot, cmd, curgoal )
+					bot:DoLadderMovement( cmd, curgoal )
 					
 				else
 					bot.b = true
 					
 					if bot:GetPos():Distance( myTarget ) > 125 then
-						if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-							if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 500 then
-								if bot:GetMoveType() == MOVETYPE_LADDER then
-						
-									DoLadderMovement( bot, cmd, curgoal )
-						
-								else
-									bot.b = true
-									
-									bot:LookatPosXY( cmd, myTarget )
-									CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
-								end
-							else
-							
-								local tr = util.TraceLine( {
-									start = bot:EyePos(),
-									endpos = AimPoint( bot ),
-									filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-								} )
-								
-								if !tr.Hit then
-									bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-									
-									ShootAtTarget( bot, AimPoint( bot ) )
-									
-									CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
-								end
-							
-								if tr.Hit then
-									--cmd:SetForwardMove( 1000 )
-									
-				
-									if bot:GetMoveType() == MOVETYPE_LADDER then
-							
-										DoLadderMovement( bot, cmd, curgoal )
-							
-									else
-										bot.b = true
-					
-										CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-									end
-								end
-							end
-						else
-							if bot:GetMoveType() == MOVETYPE_LADDER then
-						
-								DoLadderMovement( bot, cmd, curgoal )
-						
-							else
-								bot.b = true
-								
-								CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
-							end
-						end					
+						bot:LookatPosXY( cmd, myTarget )
+						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)					
 					else
 						bot.moveType = -1
-					
-						if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-							if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) <= 500 then
-								local tr = util.TraceLine( {
-									start = bot:EyePos(),
-									endpos = AimPoint( bot ),
-									filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-								} )
-								
-								if !tr.Hit then
-									bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-					
-									ShootAtTarget( bot )
-								end
-							end
-						end
 					end
 				end
-			else
+			end
+			
+			if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
 				bot.Task = 1
 			end
 		end
@@ -1753,101 +1355,133 @@ function controlBots ( bot, cmd )
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
-			if bot:GetPos():Distance( myTarget ) > 125 then
-				if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-					if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) > 500 then
-						if bot:GetMoveType() == MOVETYPE_LADDER then
-				
-							DoLadderMovement( bot, cmd, curgoal )
-				
-						else
-							bot.b = true
-							
-							bot:LookatPosXY( cmd, myTarget )
-							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
-						end
-					else
+			bot.lookDistance = 10000
+			if bot:GetPos():Distance( myTarget ) > 50 then
+				if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-						local tr = util.TraceLine( {
-							start = bot:EyePos(),
-							endpos = AimPoint( bot ),
-							filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-						} )
-						
-						if !tr.Hit then
-							bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-							
-							ShootAtTarget( bot, AimPoint( bot ) )
-							
-							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
-						end
-					
-						if tr.Hit then
-							--cmd:SetForwardMove( 1000 )
-							
-		
-							if bot:GetMoveType() == MOVETYPE_LADDER then
-					
-								DoLadderMovement( bot, cmd, curgoal )
-					
-							else
-								bot.b = true
+					bot:DoLadderMovement( cmd, curgoal )
 			
-								CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-							end
-						end
-					end
 				else
-					if bot:GetMoveType() == MOVETYPE_LADDER then
-				
-						DoLadderMovement( bot, cmd, curgoal )
-				
-					else
-						bot.b = true
-						
-						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-					end
-				end					
+					bot.b = true
+					
+					bot.Disposition = 0
+					CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
+				end				
 			else
 				bot.moveType = -1
-			
-				if IsValid (bot.FollowerEnt.Target) and bot.FollowerEnt.Target:Health() > 0 then
-					if bot:GetPos():Distance( bot.FollowerEnt.Target:GetPos() ) <= 2000 then
-						local tr = util.TraceLine( {
-							start = bot:EyePos(),
-							endpos = AimPoint( bot ),
-							filter = function( ent ) if ( ent != bot.FollowerEnt.Target and ent != bot and ent:GetClass() != "player" and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-						} )
-						
-						if !tr.Hit then
-							bot.lookAngle = ((AimPoint( bot ) - bot:EyePos()):Angle())
-							bot.attack2Hold = true
-							ShootAtTarget( bot )
-						else
-							bot.attack2Hold = false
-						end
-					end
-				end
+				bot.Disposition = 2
 			end
 		end
 	end
 	
 	--Task 12
-	--Humans: Spawnkill zombies
+	--Humans: Follow
 	--Zombies: ...
-	if bot.Task == 11 then
+	if bot.Task == 12 then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.Target
+			local myTarget = bot.FollowerEnt.TargetTeammate
+			
+			if IsValid (myTarget) then
+				if bot:GetMoveType() == MOVETYPE_LADDER then
+				
+					bot:DoLadderMovement( cmd, curgoal )
+			
+				else
+					bot.b = true
+					
+					if IsValid (bot.FollowerEnt.TargetEnemy) and !GAMEMODE.ZombieEscape then
+						if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then
+							local mtr = util.TraceLine( {
+								start = bot:EyePos(),
+								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+							} )
+							
+							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
+								bot.Task = 0
+							end
+						end
+					end
+					
+					if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
+						local tr = util.TraceLine( {
+							start = bot:EyePos(),
+							endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
+							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
+						} )
+						
+						debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+						
+						if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
+							if !tr.Hit then
+							
+								local tr2 = util.TraceLine( {
+									start = bot:EyePos(),
+									endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+									filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+								} )
+								
+								if tr2.Hit then
+									bot.Task = 9
+								end
+							end
+						else
+							if !tr.Hit then
+								bot.Task = 9
+							end
+						end
+					end
+					
+					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 then
+						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
+						bot:CheckPropPhasing( cmd )
+						
+						if !GAMEMODE.ZombieEscape then
+							
+							if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and bot.runAwayTimer <= 0 then
+								bot.Disposition = 1
+							else
+								bot.Disposition = 0
+							end
+							
+							bot:RunAwayCheck( cmd )
+						end
+					else
+						bot.Disposition = 1
+						bot.moveType = -1
+					end
+				end
+			else
+				bot.moveType = -1
+				bot.Disposition = 1
+			end
 		end
 	end
 	
 	--Task 13
-	--Humans: Follow
+	--Humans: Spawnkill zombies
 	--Zombies: ...
+	if bot.Task == 13 then
+		if bot:Team() != TEAM_UNDEAD then
+			local myTarget = bot.FollowerEnt.TargetEnemy
+			
+		end
+	end
 	
 	--Timer resets DO NOT REMOVE
 	if CurTime() > bot.targetFindDelay then
 		bot.targetFindDelay = CurTime() + 0.5
+	end
+	------------------------------------------------------------------------------------------------
+	
+	if IsValid(bot.FollowerEnt.TargetEnemy) then
+		if bot.lookAngle == (bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle() then 
+			bot.Attacking = true 
+		else 
+			bot.Attacking = false 
+		end
+	else
+		bot.Attacking = false
 	end
 end
 hook.Add( "StartCommand", "controlBots", controlBots )
@@ -1857,11 +1491,11 @@ function botDeath( ply )
 	
 	if GAMEMODE:GetWave() == 0 then return end
 	if ply:Team() != TEAM_UNDEAD and ply:GetZombieClassTable().Name == "Fresh Dead" then return end
-	print("oof")
+	
 	timer.Simple(3, function()
-		if !IsValid(ply) then return end
+		if !IsValid(ply) or ply:Alive() then return end
 		
-		if GAMEMODE:GetWaveActive() and !ply:Alive() then
+		if GAMEMODE:GetWaveActive() then
 			ply:RefreshDynamicSpawnPoint()
 			ply:UnSpectateAndSpawn()
 		end
@@ -1883,6 +1517,6 @@ hook.Add( "PlayerDisconnected","botDisconnect",botDisconnect)
 function botSpawn( ply )
 	if !ply.IsZSBot2 then return end
 	
-	DoSpawnStuff( ply, true )
+	ply:DoSpawnStuff( true )
 end
 hook.Add("PlayerSpawn", "botSpawn", botSpawn)
