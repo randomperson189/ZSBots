@@ -1456,7 +1456,7 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	if crouchJump then
 	
 		if bot.cJumpDelay < 1 then
-			bot.cJumpDelay = bfot.cJumpDelay + FrameTime()
+			bot.cJumpDelay = bot.cJumpDelay + FrameTime()
 		end
 		
 		if bot.cJumpDelay >= 1 then
@@ -1576,7 +1576,7 @@ function plymeta:DoSpawnStuff( changeClass )
 							self.Task = FOLLOW
 							self.Disposition = ENGAGE_AND_INVESTIGATE
 						else
-							self.Task = WANDER_AROUND
+							self.Task = GOTO_ARSENAL
 							self.Disposition = ENGAGE_AND_INVESTIGATE
 						end
 						self:GiveRandomPresetLoadout()
