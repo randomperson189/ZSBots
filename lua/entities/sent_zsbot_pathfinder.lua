@@ -71,7 +71,7 @@ function ENT:ChasePos( options )
 			end
 		
 			if self.TargetCadingSpot != nil then 
-				if self.Bot.Task == 7 or self.Bot.Task == 11 then
+				if self.Bot.Task == 8 or self.Bot.Task == 11 then
 					self:ComputePath (self.P, self.TargetCadingSpot)
 				end
 			end

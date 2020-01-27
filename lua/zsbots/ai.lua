@@ -1109,17 +1109,18 @@ function controlBots ( bot, cmd )
 					bot.moveType = -1
 					
 					bot.lookAngle = ((myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle())
-					bot.heldProp = myTarget
 					bot.useTimer = true
 				end
 				
 				bot:CheckPropPhasing( cmd )
 				
 				if myTarget:GetHolder() == bot then
+					bot.heldProp = myTarget
+					bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
 					bot.Task = MAKE_CADE
 				end
 			else
-				bot.useTimer = true
+				bot.useTimer = false
 				bot.Task = GOTO_ARSENAL
 			end
 		end
@@ -1133,11 +1134,12 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
 			
 			if !IsValid(bot.heldProp) then
+				bot.sprintHold = false
 				bot.Task = GOTO_ARSENAL
 			end
 			
-			if bot.FollowerEnt.TargetArsenal.CadingSpots[1] != nil then
-				myTarget = bot.FollowerEnt.TargetArsenal.CadingSpots[1]
+			if myTarget != nil then
+				--myTarget = bot.FollowerEnt.TargetArsenal.CadingSpots[1]
 				
 				local oof = bot:GetPos()
 				
@@ -1157,7 +1159,7 @@ function controlBots ( bot, cmd )
 						bot:LookatPosXY( cmd, myTarget )
 						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
 						
-						bot.heldProp:SetAngles(LerpAngle( 10 * FrameTime( ), bot.heldProp:GetAngles(), Angle(0,0,0) ))
+						--bot.heldProp:SetAngles(Angle(0,0,0))
 						
 					end
 					
@@ -1174,7 +1176,7 @@ function controlBots ( bot, cmd )
 					
 					print (tr.StartPos:Distance( tr.HitPos ))
 					--print (Vector(0, 0, bot.heldProp:GetPos().z + bot.heldProp:GetCollisionBounds().z))
-					if tr.StartPos:Distance( tr.HitPos ) <= 10 then
+					if tr.StartPos:Distance( tr.HitPos ) <= 7.5 then
 						bot.sprintHold = true
 					end
 					bot.attack2Timer = true
@@ -1187,6 +1189,7 @@ function controlBots ( bot, cmd )
 						end
 						--bot.heldProp = nil
 						
+						bot.sprintHold = false
 						bot.Task = GOTO_ARSENAL 
 					end
 					
@@ -1196,6 +1199,7 @@ function controlBots ( bot, cmd )
 						end
 						--bot.heldProp = nil
 						
+						bot.sprintHold = false
 						bot.Task = GOTO_ARSENAL
 					end
 				end
@@ -1203,6 +1207,8 @@ function controlBots ( bot, cmd )
 				if IsValid (bot.lastWeapon) then
 					cmd:SelectWeapon (bot.lastWeapon)
 				end
+				
+				bot.sprintHold = false
 				bot.Task = GOTO_ARSENAL
 			end
 		end

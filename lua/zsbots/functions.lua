@@ -55,7 +55,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 				self:ShootAtTarget()
 			end
 		else
-			--print ("oofy oof oof")
+			
 		end
 	elseif self.Disposition == OPPORTUNITY_FIRE then --OPPORTUNITY_FIRE
 		if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= self.lookDistance then
@@ -71,7 +71,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 				self:ShootAtTarget()
 			end
 		else
-			--print ("oofy oof oof")
+			
 		end
 	elseif self.Disposition == IGNORE_ENEMIES then --SELF_DEFENSE
 		
@@ -149,15 +149,10 @@ function plymeta:InputTimers()
 			
 			self.attack2Hold = true
 			
-			
-			timer.Simple (0, function()
+			timer.Simple (0.1, function()
 				if !IsValid (self) then return end
-				self.attack2Hold = false
-				timer.Simple (0.1, function()
-					if !IsValid (self) then return end
-					self.attack2Timer = false
-					self.canAttack2Timer = true
-				end)
+				self.attack2Timer = false
+				self.canAttack2Timer = true
 			end)
 		end
 	end
@@ -367,11 +362,11 @@ function plymeta:InputCheck(cmd)
 	if self.sprintHold then
 		sprint = IN_SPEED
 		
-		timer.Simple(0, function()
+		--[[timer.Simple(0, function()
 			if !IsValid(self) then return end
 			
 			self.sprintHold = false
-		end)
+		end)]]
 	end
 	
 	cmd:SetButtons(bit.bor( attack, attack2, reload, jump, crouch, use, zoom, sprint ))
