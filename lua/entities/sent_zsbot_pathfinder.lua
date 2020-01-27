@@ -30,62 +30,60 @@ function ENT:ChasePos( options )
 	
 	if !self.P:IsValid() then return end
 	while self.P:IsValid() do
-		if self.P:GetAge() > 1 and self.Bot:Health() > 0 then
+		if self.P:GetAge() > 1 and self.Bot:Alive() and self.Bot:GetZombieClassTable().Name != "Crow" then
 			
-			if self.Bot:GetZombieClassTable().Name != "Crow" then
-				if IsValid( self.TargetEnemy ) and self.Bot.Task == 0 then
+			if self.Bot.Task == 1 then
+				if self.Bot:Team() != TEAM_UNDEAD then
+					if IsValid( self.TargetArsenal ) then
+						if self.Bot:GetPos():Distance( self.TargetArsenal:GetPos() ) > 200 then
+							self:ComputePath (self.P, self.TargetArsenal:GetPos())
+						end
+					end
+				elseif IsValid( self.TargetEnemy ) then
 					self:ComputePath (self.P, self.TargetEnemy:GetPos())
 				end
-				
-				if self.Bot.Task == 1 then
-					if self.Bot:Team() != TEAM_UNDEAD then
-						if IsValid( self.TargetArsenal ) then
-							if self.Bot:GetPos():Distance( self.TargetArsenal:GetPos() ) > 200 then
-								self:ComputePath (self.P, self.TargetArsenal:GetPos())
-							end
-						end
-					elseif self.TargetPosition != nil then
-						if self.Bot:GetPos():Distance( self.TargetPosition ) > 45 then
-							self:ComputePath (self.P, self.TargetPosition)
-						end
-					end
-				end
-				
-				if IsValid( self.TargetTeammate ) then 
-					if self.Bot.Task == 2 or self.Bot.Task == 12 then
-						self:ComputePath (self.P, self.TargetTeammate:GetPos())
-					end
-				end
-				
-				if self.TargetPosition != nil then
-					if self.Bot.Task == 4 or self.Bot.Task == 11 then
-						self:ComputePath (self.P, self.TargetPosition)
-					end
-				end
+			end
 			
-				if IsValid( self.TargetNailedProp ) and self.Bot.Task == 5 then
-					self:ComputePath (self.P, self.TargetNailedProp:GetPos())
+			if self.Bot.Task == 2 and self.TargetPosition != nil then
+				if self.Bot:GetPos():Distance( self.TargetPosition ) > 45 then
+					self:ComputePath (self.P, self.TargetPosition)
 				end
+			end
 			
-				if IsValid( self.TargetCadingProp ) and self.Bot.Task == 6 then
-					self:ComputePath (self.P, self.TargetCadingProp:GetPos())
+			if IsValid( self.TargetTeammate ) then 
+				if self.Bot.Task == 3 or self.Bot.Task == 13 then
+					self:ComputePath (self.P, self.TargetTeammate:GetPos())
 				end
+			end
 			
-				if self.TargetCadingSpot != nil then 
-					if self.Bot.Task == 7 or self.Bot.Task == 10 then
-						self:ComputePath (self.P, self.TargetCadingSpot)
-					end
+			if self.TargetPosition != nil then
+				if self.Bot.Task == 5 or self.Bot.Task == 12 then
+					self:ComputePath (self.P, self.TargetPosition)
 				end
-				
-				if IsValid( self.TargetResupply ) and self.Bot.Task == 8 then
-					--if self.Bot:GetPos():Distance( self.TargetResupply:GetPos() ) > 100 then
-						self:ComputePath (self.P, self.TargetResupply:GetPos())
-					--end
+			end
+		
+			if IsValid( self.TargetNailedProp ) and self.Bot.Task == 6 then
+				self:ComputePath (self.P, self.TargetNailedProp:GetPos())
+			end
+		
+			if IsValid( self.TargetCadingProp ) and self.Bot.Task == 7 then
+				self:ComputePath (self.P, self.TargetCadingProp:GetPos())
+			end
+		
+			if self.TargetCadingSpot != nil then 
+				if self.Bot.Task == 7 or self.Bot.Task == 11 then
+					self:ComputePath (self.P, self.TargetCadingSpot)
 				end
-				
-				if IsValid( self.TargetLootItem ) and self.Bot.Task == 9 then
-					self:ComputePath (self.P, self.TargetLootItem:GetPos())
-				end
+			end
+			
+			if IsValid( self.TargetResupply ) and self.Bot.Task == 9 then
+				--if self.Bot:GetPos():Distance( self.TargetResupply:GetPos() ) > 100 then
+					self:ComputePath (self.P, self.TargetResupply:GetPos())
+				--end
+			end
+			
+			if IsValid( self.TargetLootItem ) and self.Bot.Task == 10 then
+				self:ComputePath (self.P, self.TargetLootItem:GetPos())
 			end
 			
 			if self.loco:IsStuck() then

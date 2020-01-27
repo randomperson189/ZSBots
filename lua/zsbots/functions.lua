@@ -1,25 +1,30 @@
-TASK_MELEE_ZOMBIES = 0
-TASK_GOTO_HUMANS = 0
-TASK_GOTO_ARSENAL = 1
-TASK_HIDE_FROM_HUMANS = 1
-TASK_HEAL_TEAMMATE = 2
-TASK_PLACE_RESUPPLY = 3
-TASK_WANDER_AROUND = 4
-TASK_REPAIR_CADES = 5
-TASK_PICKUP_CADING_PROP = 6
-TASK_MAKE_CADE = 7
-TASK_RESUPPLY_AMMO = 8
-TASK_PICKUP_LOOT = 9
-TASK_DEFEND_CADE = 10
-TASK_SNIPING = 11
-TASK_FOLLOW = 12
-TASK_SPAWNKILL_ZOMBIES = 13
+-- HUMAN TASKS
+GOTO_ARSENAL = 1
+MELEE_ZOMBIES = 2
+HEAL_TEAMMATE = 3
+PLACE_RESUPPLY = 4
+WANDER_AROUND = 5
+REPAIR_CADES = 6
+PICKUP_CADING_PROP = 7
+MAKE_CADE = 8
+RESUPPLY_AMMO = 9
+PICKUP_LOOT = 10
+DEFEND_CADE = 11
+SNIPING = 12
+FOLLOW = 13
+SPAWNKILL_ZOMBIES = 14
 
-DISP_IGNORE_ENEMIES = 0
-DISP_ENGAGE_AND_INVESTIGATE = 1
-DISP_OPPORTUNITY_FIRE = 2
-DISP_SELF_DEFENSE = 3
+-- ZOMBIE TASKS
+GOTO_HUMANS = 1
+HIDE_FROM_HUMANS = 2
 
+-- DISPOSITIONS
+ENGAGE_AND_INVESTIGATE = 1
+OPPORTUNITY_FIRE = 2
+SELF_DEFENSE = 3
+IGNORE_ENEMIES = 4
+
+-- MESSAGES
 MSG_MEDIC = 0
 MSG_BOSS_OUTSIDE = 1
 
@@ -173,7 +178,7 @@ function plymeta:InputTimers()
 					timer.Simple (0.5, function()
 						if !IsValid (self) then return end
 						self.attackHold = false
-						self.Task = 1
+						self.Task = GOTO_ARSENAL
 						self.deployTimer = false --comment this out if things no work properly
 						self.canDeployTimer = true
 					end)
@@ -845,11 +850,9 @@ function OtherWeaponWithAmmo(bot)
 end
 
 function CheckNavMeshAttributes( bot, cmd )
-	if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_CROUCH then
+	--[[if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_CROUCH then
 		bot.crouchHold = true
-	elseif navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() != NAV_MESH_JUMP then
-		bot.crouchHold = false
-	end
+	end]]
 	
 	if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_JUMP then
 		bot.cJumpTimer = true
@@ -1062,10 +1065,8 @@ function player.CreateZSBot( name )
 		--ply.State = 0 --Idle, Hunt, MoveTo, Buy, Hide
 		--ply.stateName = "NONE"
 		ply.Attacking = false
-		ply.Task = -1
-		ply.taskName = "NONE"
+		ply.Task = 0
 		ply.Disposition = 0 --ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
-		ply.dispositionName = "NONE"
 		ply.Skill = math.random(0, 100)
 		--ply.Morale = 0 --EXCELLENT, GOOD, POSITIVE, NEUTRAL, NEGATIVE, BAD, TERRIBLE
 		--ply.moraleName = "NONE"
@@ -1383,106 +1384,56 @@ function plymeta:AimPoint( target )
 	end
 end
 
-function SetTaskNames( bot )
-	if bot.Task == 0 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "MELEE_ZOMBIES"
+function plymeta:GetTaskName()
+	local humanNames = { 
+	"GOTO_ARSENAL",
+	"MELEE_ZOMBIES",
+	"HEAL_TEAMMATE", 
+	"PLACE_RESUPPLY", 
+	"WANDER_AROUND", 
+	"REPAIR_CADES", 
+	"GOTO_CADING_PROP", 
+	"MAKE_CADE", 
+	"RESUPPLY_AMMO", 
+	"PICKUP_LOOT", 
+	"DEFEND_CADE", 
+	"SNIPING", 
+	"FOLLOW",
+	"SPAWNKILL_ZOMBIES"
+	}
+	
+	local zombieNames = {
+	"GOTO_HUMANS", 
+	"HIDE_FROM_HUMANS"
+	}
+	
+	if self:Team() != TEAM_UNDEAD then
+		if humanNames[self.Task] != nil then
+			return humanNames[self.Task]
 		else
-			bot.taskName = "GOTO_HUMANS"
-		end
-	elseif bot.Task == 1 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "GOTO_ARSENAL"
-		else
-			bot.taskName = "HIDE_FROM_HUMANS"
-		end
-	elseif bot.Task == 2 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "HEAL_TEAMMATE"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 3 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "PLACE_RESUPPLY"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 4 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "WANDER_AROUND"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 5 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "REPAIR_CADES"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 6 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "GOTO_CADING_PROP"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 7 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "MAKE_CADE"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 8 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "RESUPPLY_AMMO"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 9 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "PICKUP_LOOT"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 10 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "DEFEND_CADE"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 11 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "SNIPING"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 12 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "FOLLOW"
-		else
-			bot.taskName = bot.Task
-		end
-	elseif bot.Task == 13 then
-		if bot:Team() != TEAM_UNDEAD then
-			bot.taskName = "SPAWNKILL_ZOMBIES"
-		else
-			bot.taskName = bot.Task
+			return tostring(self.Task)
 		end
 	else
-		bot.taskName = bot.Task
+		if zombieNames[self.Task] != nil then
+			return zombieNames[self.Task]
+		else
+			return tostring(self.Task)
+		end
 	end
+end
+
+function plymeta:GetDispositionName()
+	local names = {
+	"ENGAGE_AND_INVESTIGATE",
+	"OPPORTUNITY_FIRE",
+	"SELF_DEFENSE",
+	"IGNORE_ENEMIES"
+	}
 	
-	
-	if bot.Disposition == 0 then
-		bot.dispositionName = "IGNORE_ENEMIES"
-	elseif bot.Disposition == 1 then
-		bot.dispositionName = "ENGAGE_AND_INVESTIGATE"
-	elseif bot.Disposition == 2 then
-		bot.dispositionName = "OPPORTUNITY_FIRE"
-	elseif bot.Disposition == 3 then
-		bot.dispositionName = "SELF_DEFENSE"
+	if names[self.Disposition] != nil then
+		return names[self.Disposition]
 	else
-		bot.dispositionName = bot.Disposition
+		return tostring(self.Disposition)
 	end
 end
 
@@ -1505,7 +1456,7 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	if crouchJump then
 	
 		if bot.cJumpDelay < 1 then
-			bot.cJumpDelay = bot.cJumpDelay + FrameTime()
+			bot.cJumpDelay = bfot.cJumpDelay + FrameTime()
 		end
 		
 		if bot.cJumpDelay >= 1 then
@@ -1588,7 +1539,7 @@ function plymeta:DoSpawnStuff( changeClass )
 	if GAMEMODE.ZombieEscape then self.lookDistance = defaultEscapeLookDistance else self.lookDistance = defaultLookDistance end
 	
 	self.Task = -1
-	self.Disposition = 0
+	self.Disposition = IGNORE_ENEMIES
 	self.moveType = -1
 	self.newPointTimer = 15
 	self.runAwayTimer = 0
@@ -1601,12 +1552,12 @@ function plymeta:DoSpawnStuff( changeClass )
 		end)
 		
 		if GAMEMODE.ZombieEscape then
-			self.Task = 12
-			self.Disposition = 1
+			self.Task = FOLLOW
+			self.Disposition = ENGAGE_AND_INVESTIGATE
 		else
 			if GAMEMODE:GetWave() != 0 then
-				self.Task = 1
-				self.Disposition = 1
+				self.Task = GOTO_ARSENAL
+				self.Disposition = ENGAGE_AND_INVESTIGATE
 				
 				timer.Simple( 4, function() 
 					if !IsValid(self) then return end
@@ -1622,11 +1573,11 @@ function plymeta:DoSpawnStuff( changeClass )
 					timer.Simple(delay, function() 
 						if !IsValid(self) then return end
 						if game.IsObj() then
-							self.Task = 12
-							self.Disposition = 1
+							self.Task = FOLLOW
+							self.Disposition = ENGAGE_AND_INVESTIGATE
 						else
-							self.Task = 1
-							self.Disposition = 1
+							self.Task = WANDER_AROUND
+							self.Disposition = ENGAGE_AND_INVESTIGATE
 						end
 						self:GiveRandomPresetLoadout()
 					end)
@@ -1634,7 +1585,7 @@ function plymeta:DoSpawnStuff( changeClass )
 			end
 		end
 	else
-		self.Task = 0
+		self.Task = GOTO_HUMANS
 		
 		if changeClass and !game.IsObj() and !GAMEMODE.ZombieEscape then
 			self:RerollBotClass()
