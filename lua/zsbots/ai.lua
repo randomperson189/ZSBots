@@ -201,7 +201,7 @@ function controlBots ( bot, cmd )
 			--bot.attackProp = FindNearestProp2( bot, 999999 )
 			bot.FollowerEnt.TargetPosition = FindNearestHidingSpot( bot, 999999 )
 			
-			if bot.Task == 1 then
+			if bot.Task == 2 then
 				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
 			elseif AnEnemyIsInSight("player", bot) then
 				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
@@ -341,7 +341,7 @@ function controlBots ( bot, cmd )
 		
 	--Task 1
 	--Humans: Go to arsenal
-	--Zombies: Go to hiding spot
+	--Zombies: Go to humans
 	
 	if bot.Task == 1 then
 		if bot:Team() != TEAM_UNDEAD then
@@ -411,16 +411,16 @@ function controlBots ( bot, cmd )
 							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 							
 							if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and bot.runAwayTimer <= 0 then
-								bot.Disposition = 1
+								bot.Disposition = ENGAGE_AND_INVESTIGATE
 							else
-								bot.Disposition = 0
+								bot.Disposition = IGNORE_ENEMIES
 							end
 							
 							bot:RunAwayCheck( cmd )
 						end
 					elseif !atr.Hit then
 						bot.moveType = -1
-						bot.Disposition = 2
+						bot.Disposition = OPPORTUNITY_FIRE
 						
 						if IsValid( bot:GetActiveWeapon() ) then
 							--print (bot.FollowerEnt.TargetCadingSpot)
@@ -516,7 +516,7 @@ function controlBots ( bot, cmd )
 				
 				if !GAMEMODE:GetWaveActive() then
 					if tr.Hit and bot.FollowerEnt.TargetPosition != nil then
-						bot.Task = GOTO_ARSENAL
+						bot.Task = HIDE_FROM_HUMANS
 					end
 				end
 				
@@ -719,7 +719,7 @@ function controlBots ( bot, cmd )
 			end
 			
 			if IsValid (myTarget) then
-				bot.Disposition = 0
+				bot.Disposition = IGNORE_ENEMIES
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 				
 					bot:DoLadderMovement( cmd, curgoal )	
@@ -765,12 +765,12 @@ function controlBots ( bot, cmd )
 				} )
 				
 				if !tr.Hit then
-					bot.Task = MELEE_ZOMBIES
+					bot.Task = GOTO_HUMANS
 				end
 			end
 			
 			if GAMEMODE:GetWaveActive() or myTarget == nil then
-				bot.Task = MELEE_ZOMBIES
+				bot.Task = GOTO_HUMANS
 			end
 			
 			if myTarget != nil then
@@ -802,7 +802,7 @@ function controlBots ( bot, cmd )
 			
 			if bot:HasWeapon("weapon_zs_medicalkit") then
 				
-				bot.Disposition = 3
+				bot.Disposition = SELF_DEFENSE
 				
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit" then
 					bot.lastWeapon = bot:GetActiveWeapon()
@@ -904,9 +904,9 @@ function controlBots ( bot, cmd )
 				
 				if bot.runAwayTimer <= 0 then
 					if bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
-						bot.Disposition = 1
+						bot.Disposition = ENGAGE_AND_INVESTIGATE
 					else
-						bot.Disposition = 0
+						bot.Disposition = IGNORE_ENEMIES
 					end
 				end
 				
@@ -978,7 +978,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 6 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetNailedProp
-			bot.Disposition = 0
+			bot.Disposition = IGNORE_ENEMIES
 			
 			if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
 				
@@ -1084,7 +1084,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 7 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingProp
-			bot.Disposition = 0
+			bot.Disposition = IGNORE_ENEMIES
 			
 			if IsValid(myTarget) then
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" then
@@ -1214,7 +1214,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 9 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetResupply
-			bot.Disposition = 0
+			bot.Disposition = IGNORE_ENEMIES
 			
 			if IsValid(myTarget) then
 				if bot:GetMoveType() == MOVETYPE_LADDER then
@@ -1250,7 +1250,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 10 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetLootItem
-			bot.Disposition = 3
+			bot.Disposition = SELF_DEFENSE
 			
 			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 then
 				bot.moveType = -1
@@ -1305,7 +1305,7 @@ function controlBots ( bot, cmd )
 	if bot.Task == 11 then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
-			bot.Disposition = 2
+			bot.Disposition = OPPORTUNITY_FIRE
 			
 			if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
 				
@@ -1363,12 +1363,12 @@ function controlBots ( bot, cmd )
 				else
 					bot.b = true
 					
-					bot.Disposition = 0
+					bot.Disposition = IGNORE_ENEMIES
 					CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
 				end				
 			else
 				bot.moveType = -1
-				bot.Disposition = 2
+				bot.Disposition = OPPORTUNITY_FIRE
 			end
 		end
 	end
@@ -1438,21 +1438,21 @@ function controlBots ( bot, cmd )
 						if !GAMEMODE.ZombieEscape then
 							
 							if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and bot.runAwayTimer <= 0 then
-								bot.Disposition = 1
+								bot.Disposition = ENGAGE_AND_INVESTIGATE
 							else
-								bot.Disposition = 0
+								bot.Disposition = IGNORE_ENEMIES
 							end
 							
 							bot:RunAwayCheck( cmd )
 						end
 					else
-						bot.Disposition = 1
+						bot.Disposition = ENGAGE_AND_INVESTIGATE
 						bot.moveType = -1
 					end
 				end
 			else
 				bot.moveType = -1
-				bot.Disposition = 1
+				bot.Disposition = ENGAGE_AND_INVESTIGATE
 			end
 		end
 	end

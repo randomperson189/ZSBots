@@ -39,7 +39,7 @@ local entmeta = FindMetaTable("Entity")
 if not entmeta then return end
 
 function plymeta:DispositionCheck( cmd, enemy )
-	if self.Disposition == 0 --[[IGNORE ENEMIES]] or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
+	if self.Disposition == IGNORE_ENEMIES --[[IGNORE ENEMIES]] or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
 	
 	local tr = util.TraceLine( {
 		start = self:EyePos(),
@@ -47,7 +47,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 		filter = function( ent ) if ( ent != self.FollowerEnt.TargetEnemy and ent != self and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 	} )
 	
-	if self.Disposition == 1 then --ENGAGE_AND_INVESTIGATE
+	if self.Disposition == ENGAGE_AND_INVESTIGATE then --ENGAGE_AND_INVESTIGATE
 		if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= self.lookDistance then
 			if !tr.Hit then
 				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
@@ -57,7 +57,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 		else
 			--print ("oofy oof oof")
 		end
-	elseif self.Disposition == 2 then --OPPORTUNITY_FIRE
+	elseif self.Disposition == OPPORTUNITY_FIRE then --OPPORTUNITY_FIRE
 		if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= self.lookDistance then
 			if !tr.Hit then
 				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
@@ -73,7 +73,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 		else
 			--print ("oofy oof oof")
 		end
-	elseif self.Disposition == 3 then --SELF_DEFENSE
+	elseif self.Disposition == IGNORE_ENEMIES then --SELF_DEFENSE
 		
 	end
 end
@@ -1066,7 +1066,7 @@ function player.CreateZSBot( name )
 		--ply.stateName = "NONE"
 		ply.Attacking = false
 		ply.Task = 0
-		ply.Disposition = 0 --ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
+		ply.Disposition = IGNORE_ENEMIES --ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
 		ply.Skill = math.random(0, 100)
 		--ply.Morale = 0 --EXCELLENT, GOOD, POSITIVE, NEUTRAL, NEGATIVE, BAD, TERRIBLE
 		--ply.moraleName = "NONE"
@@ -1289,7 +1289,7 @@ function plymeta:RunAwayCheck( cmd )
 			end
 		elseif self.Skill > 50 then
 			--print ("running away" .. self.runAwayTimer)
-			self.Disposition = 0
+			self.Disposition = IGNORE_ENEMIES
 			
 			if !self:GetActiveWeapon().IsMelee then
 				for i, meleeWep in ipairs(self:GetWeapons()) do 
@@ -1538,7 +1538,7 @@ function plymeta:DoSpawnStuff( changeClass )
 	--RESET SOME VALUES ORELSE BAD THINGS HAPPEN
 	if GAMEMODE.ZombieEscape then self.lookDistance = defaultEscapeLookDistance else self.lookDistance = defaultLookDistance end
 	
-	self.Task = -1
+	self.Task = 0
 	self.Disposition = IGNORE_ENEMIES
 	self.moveType = -1
 	self.newPointTimer = 15
