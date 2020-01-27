@@ -1,5 +1,5 @@
 # ZSBots
-These are Bots I'm making for the Garry's Mod Zombie Survival gamemode.
+These are Bots I'm making for the Garry's Mod Zombie Survival gamemode. They're still in development so expect bugs and unfinished features. If you find a bug, be sure to report it in the Issues section.
 
 If the bots aren't moving then type 'nav_generate' into the console.
 
