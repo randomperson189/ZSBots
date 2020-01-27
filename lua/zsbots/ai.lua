@@ -295,7 +295,7 @@ function controlBots ( bot, cmd )
 	--print (#bot.FollowerEnt.TargetArsenal.DefendingSpots)
 	
 	if IsValid (bot:GetActiveWeapon()) and bot:Team() != TEAM_UNDEAD then
-		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee then
+		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() then
 			bot.reloadHold = true
 		end
 	end
@@ -311,7 +311,7 @@ function controlBots ( bot, cmd )
 	end
 	
 	
-	if bot:Team() != TEAM_UNDEAD and bot.Skill > 25 then
+	if bot:Team() != TEAM_UNDEAD and bot.Skill > 25 and GetConVar( "zs_bot_can_chat" ):GetInt() != 0 then
 		if bot:Health() <= (2 / 4 * bot:GetMaxHealth()) then
 			SayPresetMessage(bot, MSG_MEDIC, true)
 		elseif bot.prevSay == 0 then

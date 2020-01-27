@@ -47,7 +47,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 			if !tr.Hit then
 				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
 				
-				ShootAtTarget( self )
+				self:ShootAtTarget()
 			end
 		else
 			--print ("oofy oof oof")
@@ -63,7 +63,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 					end
 				end
 				
-				ShootAtTarget( self )
+				self:ShootAtTarget()
 			end
 		else
 			--print ("oofy oof oof")
@@ -846,13 +846,9 @@ end
 
 function CheckNavMeshAttributes( bot, cmd )
 	if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_CROUCH then
-		if bot.attackHold then
-			cmd:SetButtons( bit.bor( IN_DUCK, IN_ATTACK ) )
-		elseif bot.jumpHold then
-			cmd:SetButtons( bit.bor( IN_DUCK, IN_JUMP ) )
-		else
-			cmd:SetButtons( IN_DUCK )
-		end
+		bot.crouchHold = true
+	elseif navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() != NAV_MESH_JUMP then
+		bot.crouchHold = false
 	end
 	
 	if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_JUMP then
@@ -1323,25 +1319,25 @@ function plymeta:CheckPropPhasing( cmd )
 	end
 end
 
-function ShootAtTarget( bot )
-	local skillSteadyShoot = math.Remap( bot.Skill, 0, 100, 25, 10 )
+function plymeta:ShootAtTarget()
+	local skillSteadyShoot = math.Remap( self.Skill, 0, 100, 25, 10 )
 	
 	local th = util.TraceHull( {
-		start = bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(bot:AimPoint( bot.FollowerEnt.TargetEnemy )),
+		start = self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.FollowerEnt.TargetEnemy )),
 		mins = Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ),
 		maxs = Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ),
 		ignoreworld = true,
-		filter = function( ent ) if ( ent == bot.FollowerEnt.TargetEnemy ) then return true end end
+		filter = function( ent ) if ( ent == self.FollowerEnt.TargetEnemy ) then return true end end
 	} )
 	
 	local colour = Color( 255, 0, 0, 0)
 	
 	if th.Hit then
-		bot.attackTimer = true
+		self.attackTimer = true
 		colour = Color( 0, 255, 0, 0)
 	end
 	
-	debugoverlay.Box( bot:EyePos() + bot:EyeAngles():Forward() * bot:EyePos():Distance(bot:AimPoint( bot.FollowerEnt.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour )
+	debugoverlay.Box( self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.FollowerEnt.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour )
 end
 
 function plymeta:AimPoint( target )
