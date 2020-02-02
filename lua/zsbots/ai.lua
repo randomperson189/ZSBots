@@ -334,7 +334,7 @@ function controlBots ( bot, cmd )
 			local medCooldown = medWeapon:GetNextCharge() - CurTime()
 			
 			if bot.FollowerEnt.TargetTeammate:Health() <= (3 / 4 * bot.FollowerEnt.TargetTeammate:GetMaxHealth()) and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and medCooldown <= 0 and medWeapon:GetPrimaryAmmoCount() > 0 then
-				bot.Task = HEAL_TEAMMATES
+				bot.Task = HEAL_TEAMMATE
 			end
 		end
 	end
