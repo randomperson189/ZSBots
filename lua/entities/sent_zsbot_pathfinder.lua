@@ -44,8 +44,12 @@ function ENT:ChasePos( options )
 				end
 			end
 			
-			if self.Bot.Task == 2 and self.TargetPosition != nil then
-				if self.Bot:GetPos():Distance( self.TargetPosition ) > 45 then
+			if self.Bot.Task == 2 then
+				if self.Bot:Team() != TEAM_UNDEAD then
+					if IsValid( self.TargetEnemy ) then
+						self:ComputePath (self.P, self.TargetEnemy:GetPos())
+					end
+				elseif self.TargetPosition != nil then
 					self:ComputePath (self.P, self.TargetPosition)
 				end
 			end
