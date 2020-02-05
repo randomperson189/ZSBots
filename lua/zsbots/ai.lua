@@ -27,7 +27,10 @@ function controlBots ( bot, cmd )
 			
 			if IsValid(bot:GetActiveWeapon()) then
 				debugoverlay.ScreenText( 0.55, 0.32, "Weapon: " .. tostring(bot:GetActiveWeapon():GetClass()), 0, Color(255, 255, 255) )
-				debugoverlay.ScreenText( 0.55, 0.34, "Ammo: " .. bot:GetActiveWeapon():Clip1() .. "/" .. bot:GetAmmoCount(bot:GetActiveWeapon():GetPrimaryAmmoType()) , 0, Color(255, 255, 0))
+				
+				if bot:GetActiveWeapon():GetPrimaryAmmoType() != -1 then
+					debugoverlay.ScreenText( 0.55, 0.34, "Ammo: " .. bot:GetActiveWeapon():Clip1() .. "/" .. bot:GetAmmoCount(bot:GetActiveWeapon():GetPrimaryAmmoType()), 0, Color(255, 255, 0))
+				end
 			end
 			
 			debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. bot.Skill .. "%", 0, Color(255, 255, 255))
@@ -109,6 +112,17 @@ function controlBots ( bot, cmd )
 		if GetConVar( "zs_bot_muscular" ):GetInt() != 0 then
 			bot.BuffMuscular = true
 			bot:DoMuscularBones()
+		end
+	end
+	
+	if GetConVar( "zs_bot_infinite_ammo" ):GetInt() != 0 and IsValid(bot:GetActiveWeapon()) then
+		local wep = bot:GetActiveWeapon()
+		
+		if wep:GetPrimaryAmmoType() != -1 then
+			bot:SetAmmo(9999, wep:GetPrimaryAmmoType())
+		end
+		if wep:GetSecondaryAmmoType() != -1 then
+			bot:SetAmmo(9999, wep:GetSecondaryAmmoType())
 		end
 	end
 	
