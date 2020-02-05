@@ -39,11 +39,12 @@ local entmeta = FindMetaTable("Entity")
 if not entmeta then return end
 
 function plymeta:DispositionCheck( cmd, enemy )
-	if self.Disposition == IGNORE_ENEMIES --[[IGNORE ENEMIES]] or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
+	if self.Disposition == IGNORE_ENEMIES or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
 	
 	local tr = util.TraceLine( {
 		start = self:EyePos(),
 		endpos = self:AimPoint( self.FollowerEnt.TargetEnemy ),
+		mask = MASK_SHOT,
 		filter = function( ent ) if ( ent != self.FollowerEnt.TargetEnemy and ent != self and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 	} )
 	
@@ -533,6 +534,7 @@ function AnEnemyIsInSight(className, thisEnt)
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
 				endpos = entity:EyePos(),
+				mask = MASK_SHOT,
 				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 			} )
 			
@@ -555,6 +557,7 @@ function FindNearestEnemyInSight( className, thisEnt, range )
 		local tr = util.TraceLine( {
 			start = thisEnt:EyePos(),
 			endpos = entity:EyePos(),
+			mask = MASK_SHOT,
 			filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 		} )
 		
@@ -730,6 +733,7 @@ function FindNearestHidingSpot( thisEnt, range )
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
 				endpos = Vector(spot.x, spot.y, spot.z + (thisEnt:EyePos().z - thisEnt:GetPos().z)),
+				mask = MASK_SHOT,
 				filter = function( ent ) if ( ent != thisEnt ) then return true end end
 			} )
 
@@ -752,6 +756,7 @@ function FindNearestSniperSpot( thisEnt, range )
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
 				endpos = Vector(spot.x, spot.y, spot.z + (thisEnt:EyePos().z - thisEnt:GetPos().z)),
+				mask = MASK_SHOT,
 				filter = function( ent ) if ( ent != thisEnt ) then return true end end
 			} )
 

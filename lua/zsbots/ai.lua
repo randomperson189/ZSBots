@@ -366,45 +366,38 @@ function controlBots ( bot, cmd )
 				
 				if IsValid (bot.FollowerEnt.TargetEnemy) then
 					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then
-						local mtr = util.TraceLine( {
+						local meleeTrace = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+							mask = MASK_SHOT,
 							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 						} )
 						
-						if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
+						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
 							bot.Task = MELEE_ZOMBIES
 						end
 					end
 				end
 				
 				if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-					local tr = util.TraceLine( {
+					local lootTrace = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
+						mask = MASK_SHOT,
 						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
 					} )
 					
 					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 					
-					if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
-						if !tr.Hit then
-						
-							local tr2 = util.TraceLine( {
-								start = bot:EyePos(),
-								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
-								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-							} )
-							
-							if tr2.Hit then
-								bot.Task = PICKUP_LOOT
-							end
+					--if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
+						if !lootTrace.Hit then
+							bot.Task = PICKUP_LOOT
 						end
-					else
+					--[[else
 						if !tr.Hit then
 							bot.Task = PICKUP_LOOT
 						end
-					end
+					end]]
 				end
 			
 				if IsValid (myTarget) then
@@ -925,31 +918,17 @@ function controlBots ( bot, cmd )
 				end
 				
 				if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-					local tr = util.TraceLine( {
+					local lootTrace = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
+						mask = MASK_SHOT,
 						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
 					} )
 					
 					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 					
-					if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
-						if !tr.Hit then
-						
-							local tr2 = util.TraceLine( {
-								start = bot:EyePos(),
-								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
-								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-							} )
-							
-							if tr2.Hit then
-								bot.Task = PICKUP_LOOT
-							end
-						end
-					else
-						if !tr.Hit then
-							bot.Task = PICKUP_LOOT
-						end
+					if !lootTrace.Hit then
+						bot.Task = PICKUP_LOOT
 					end
 				end
 				
@@ -969,6 +948,7 @@ function controlBots ( bot, cmd )
 					local tr = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+						mask = MASK_SHOT,
 						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 					} )
 					
@@ -1408,11 +1388,18 @@ function controlBots ( bot, cmd )
 				else
 					bot.b = true
 					
+					local atr = util.TraceLine( {
+						start = bot:EyePos(),
+						endpos = myTarget:LocalToWorld(myTarget:OBBCenter()),
+						filter = function( ent ) if ( ent:IsWorld() ) then return true end end
+					} )
+					
 					if IsValid (bot.FollowerEnt.TargetEnemy) and !GAMEMODE.ZombieEscape then
 						if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then
 							local mtr = util.TraceLine( {
 								start = bot:EyePos(),
 								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+								mask = MASK_SHOT,
 								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 							} )
 							
@@ -1423,35 +1410,21 @@ function controlBots ( bot, cmd )
 					end
 					
 					if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-						local tr = util.TraceLine( {
+						local lootTrace = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
+							mask = MASK_SHOT,
 							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
 						} )
 						
 						debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
-						
-						if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
-							if !tr.Hit then
-							
-								local tr2 = util.TraceLine( {
-									start = bot:EyePos(),
-									endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
-									filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-								} )
 								
-								if tr2.Hit then
-									bot.Task = PICKUP_LOOT
-								end
-							end
-						else
-							if !tr.Hit then
-								bot.Task = PICKUP_LOOT
-							end
+						if !lootTrace.Hit then
+							bot.Task = PICKUP_LOOT
 						end
 					end
 					
-					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 then
+					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 or atr.Hit then
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 						bot:CheckPropPhasing( cmd )
 						
@@ -1465,7 +1438,7 @@ function controlBots ( bot, cmd )
 							
 							bot:RunAwayCheck( cmd )
 						end
-					else
+					elseif !atr.Hit then
 						bot.Disposition = ENGAGE_AND_INVESTIGATE
 						bot.moveType = -1
 					end
