@@ -409,7 +409,7 @@ function controlBots ( bot, cmd )
 						filter = function( ent ) if ( ent:IsWorld() ) then return true end end
 					} )
 					
-					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 or atr.Hit then
+					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 or atr.Hit or bot:GetBarricadeGhosting() then
 						if bot:GetMoveType() == MOVETYPE_LADDER then
 							
 							bot:DoLadderMovement( cmd, curgoal )
@@ -427,7 +427,7 @@ function controlBots ( bot, cmd )
 							
 							bot:RunAwayCheck( cmd )
 						end
-					elseif !atr.Hit then
+					elseif !atr.Hit and !bot:GetBarricadeGhosting() then
 						bot.moveType = -1
 						bot.Disposition = OPPORTUNITY_FIRE
 						
@@ -1426,7 +1426,7 @@ function controlBots ( bot, cmd )
 						end
 					end
 					
-					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 or atr.Hit then
+					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 or atr.Hit or bot:GetBarricadeGhosting() then
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 						bot:CheckPropPhasing( cmd )
 						
@@ -1440,7 +1440,7 @@ function controlBots ( bot, cmd )
 							
 							bot:RunAwayCheck( cmd )
 						end
-					elseif !atr.Hit then
+					elseif !atr.Hit and !bot:GetBarricadeGhosting() then
 						bot.Disposition = ENGAGE_AND_INVESTIGATE
 						bot.moveType = -1
 					end
