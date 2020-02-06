@@ -118,11 +118,13 @@ function controlBots ( bot, cmd )
 	if GetConVar( "zs_bot_infinite_ammo" ):GetInt() != 0 and IsValid(bot:GetActiveWeapon()) then
 		local wep = bot:GetActiveWeapon()
 		
-		if wep:GetPrimaryAmmoType() != -1 then
-			bot:SetAmmo(9999, wep:GetPrimaryAmmoType())
-		end
-		if wep:GetSecondaryAmmoType() != -1 then
-			bot:SetAmmo(9999, wep:GetSecondaryAmmoType())
+		if !wep.AmmoIfHas then
+			if wep:GetPrimaryAmmoType() != -1 then
+				bot:SetAmmo(9999, wep:GetPrimaryAmmoType())
+			end
+			if wep:GetSecondaryAmmoType() != -1 then
+				bot:SetAmmo(9999, wep:GetSecondaryAmmoType())
+			end
 		end
 	end
 	
