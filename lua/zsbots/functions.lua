@@ -1304,7 +1304,7 @@ function plymeta:RunAwayCheck( cmd )
 	end
 end
 
-function plymeta:CheckPropPhasing( cmd )
+function plymeta:CheckPropPhasing()
 	local tr = util.TraceHull( {
 		start = self:GetPos(),
 		endpos = self:GetPos(),
@@ -1507,6 +1507,8 @@ function plymeta:DoLadderMovement (cmd, curgoal)
 		self.lookAngle = Angle (-20, curgoalposXY.y, self:EyeAngles().z)
 		
 		--self.lookAngle = ((curgoal.pos - self:GetPos()):Angle())
+		
+		if self:Team() != TEAM_UNDEAD then self:SetBarricadeGhosting(true) end
 	end
 									
 	if self.canGetOffLadderTimer then

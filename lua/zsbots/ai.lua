@@ -502,7 +502,7 @@ function controlBots ( bot, cmd )
 						end
 					end
 					
-					bot:CheckPropPhasing( cmd )
+					bot:CheckPropPhasing()
 					
 					--debugoverlay.Box( bot:GetPos(), Vector( -18, -18, 0 ), Vector( 18, 18, 73 ),0, Color( 255, 255, 255 ), false )
 					
@@ -859,7 +859,7 @@ function controlBots ( bot, cmd )
 					end
 				end
 				
-				bot:CheckPropPhasing( cmd )
+				bot:CheckPropPhasing()
 			else
 				if IsValid (bot.lastWeapon) then
 					cmd:SelectWeapon (bot.lastWeapon)
@@ -964,7 +964,7 @@ function controlBots ( bot, cmd )
 			
 			
 			bot:RunAwayCheck( cmd )
-			bot:CheckPropPhasing( cmd )
+			bot:CheckPropPhasing()
 		end
 	end
 	
@@ -1108,7 +1108,7 @@ function controlBots ( bot, cmd )
 					bot.useTimer = true
 				end
 				
-				bot:CheckPropPhasing( cmd )
+				bot:CheckPropPhasing()
 				
 				if myTarget:GetHolder() == bot then
 					bot.heldProp = myTarget
@@ -1242,7 +1242,7 @@ function controlBots ( bot, cmd )
 				bot.Task = GOTO_ARSENAL
 			end
 			
-			bot:CheckPropPhasing( cmd )
+			bot:CheckPropPhasing()
 		end
 	end
 	
@@ -1297,7 +1297,7 @@ function controlBots ( bot, cmd )
 				bot.Task = GOTO_ARSENAL
 			end
 			
-			bot:CheckPropPhasing( cmd )
+			bot:CheckPropPhasing()
 		end
 	end
 	
@@ -1428,7 +1428,7 @@ function controlBots ( bot, cmd )
 					
 					if bot:GetPos():Distance( myTarget:GetPos() ) > 200 or atr.Hit or bot:GetBarricadeGhosting() then
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-						bot:CheckPropPhasing( cmd )
+						bot:CheckPropPhasing()
 						
 						if !GAMEMODE.ZombieEscape then
 							
