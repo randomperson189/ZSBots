@@ -36,7 +36,7 @@ function ENT:ChasePos( options )
 			if self.Bot.Task == GOTO_ARSENAL then
 				if self.Bot:Team() != TEAM_UNDEAD then
 					if IsValid( self.TargetArsenal ) then
-						if self.Bot:GetPos():Distance( self.TargetArsenal:GetPos() ) > 200 then
+						if self.Bot:GetPos():Distance( self.TargetArsenal:GetPos() ) > 100 then
 							self:ComputePath (self.P, self.TargetArsenal:GetPos())
 						end
 					end

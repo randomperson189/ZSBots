@@ -28,6 +28,12 @@ IGNORE_ENEMIES = 4
 MSG_MEDIC = 0
 MSG_BOSS_OUTSIDE = 1
 
+-- OTHERS
+BIGGER = 1
+BIGGER_OR_EQUAL = 2
+SMALLER = 3
+SMALLER_OR_EQUAL = 4
+
 defaultLookDistance = 1000
 defaultEscapeLookDistance = math.huge
 defaultRotationSpeed = 5 -- was 10
@@ -37,6 +43,9 @@ if not plymeta then return end
 
 local entmeta = FindMetaTable("Entity")
 if not entmeta then return end
+
+local vecmeta = FindMetaTable("Vector")
+if not vecmeta then return end
 
 --[[if IsValid(bot.FollowerEnt.TargetArsenal) then
 		for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
@@ -50,6 +59,20 @@ if not entmeta then return end
 		end
 	end]]
 
+function vecmeta:QuickDistanceCheck(otherVector, checkType, dist)
+	if checkType == 1 then
+		return self:DistToSqr(otherVector) > (dist * dist)
+	elseif checkType == 2 then
+		return self:DistToSqr(otherVector) >= (dist * dist)
+	elseif checkType == 3 then
+		return self:DistToSqr(otherVector) < (dist * dist)
+	elseif checkType == 4 then
+		return self:DistToSqr(otherVector) <= (dist * dist)
+	end
+	
+	return nil
+end
+
 function plymeta:DispositionCheck( cmd, enemy )
 	if self.Disposition == IGNORE_ENEMIES or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
 	
@@ -61,7 +84,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 	} )
 	
 	if self.Disposition == ENGAGE_AND_INVESTIGATE then --ENGAGE_AND_INVESTIGATE
-		if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= self.lookDistance then
+		if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
 				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
 				
@@ -71,7 +94,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 			
 		end
 	elseif self.Disposition == OPPORTUNITY_FIRE then --OPPORTUNITY_FIRE
-		if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= self.lookDistance then
+		if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
 				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
 				
@@ -86,7 +109,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 		else
 			
 		end
-	elseif self.Disposition == IGNORE_ENEMIES then --SELF_DEFENSE
+	elseif self.Disposition == SELF_DEFENSE then --SELF_DEFENSE
 		
 	end
 end
@@ -1319,7 +1342,7 @@ function plymeta:RunAwayCheck( cmd )
 		self.b = true
 		
 		if self.runAwayTimer <= 0 then
-			if self:GetPos():Distance( self.FollowerEnt.TargetEnemy:GetPos() ) <= 150 then
+			if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, 150 ) then
 				self.runAwayTimer = math.random(1, 3)
 			end
 		elseif self.Skill > 50 then
