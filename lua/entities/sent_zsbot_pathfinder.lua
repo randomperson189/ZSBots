@@ -45,7 +45,7 @@ function ENT:ChasePos( options )
 				end
 			end
 			
-			if self.Bot.Task == MELEE_ZOMBIES then
+			if self.Bot.Task == MELEE_ZOMBIE then
 				if self.Bot:Team() != TEAM_UNDEAD then
 					if IsValid( self.TargetEnemy ) then
 						self:ComputePath (self.P, self.TargetEnemy:GetPos())
