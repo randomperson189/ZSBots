@@ -213,32 +213,32 @@ function controlBots ( bot, cmd )
 		bot.nearbyEnemies = CountNearbyEnemies( bot, 300 )
 		
 		if bot:Team() == TEAM_UNDEAD then
-			--bot.attackProp = FindNearestProp2( bot, 999999 )
-			bot.FollowerEnt.TargetPosition = FindNearestHidingSpot( bot, 999999 )
+			--bot.attackProp = FindNearestProp2( bot )
+			bot.FollowerEnt.TargetPosition = FindNearestHidingSpot( bot )
 			
 			if bot.Task == 2 then
-				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
+				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
 			elseif AnEnemyIsInSight("player", bot) then
-				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
+				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
 			else
 				bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot )
 			end
 		else
 			bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
-			bot.FollowerEnt.TargetNailedProp = FindNearestNailedProp( bot, 999999 )
-			bot.FollowerEnt.TargetCadingProp = FindNearestProp( bot, 999999 )
-			bot.FollowerEnt.TargetLootItem = FindNearestLoot( bot, 999999 )
-			bot.FollowerEnt.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot, 999999 )
-			bot.FollowerEnt.TargetResupply = FindNearestEntity( "prop_resupplybox", bot, 999999 )
+			bot.FollowerEnt.TargetNailedProp = FindNearestNailedProp( bot )
+			bot.FollowerEnt.TargetCadingProp = FindNearestProp( bot )
+			bot.FollowerEnt.TargetLootItem = FindNearestLoot( bot )
+			bot.FollowerEnt.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot )
+			bot.FollowerEnt.TargetResupply = FindNearestEntity( "prop_resupplybox", bot )
 			
 			if bot:HasWeapon ("weapon_zs_medicalkit") then
-				bot.FollowerEnt.TargetHealing = FindNearestHealTarget( "player", bot, 999999 )
+				bot.FollowerEnt.TargetHealing = FindNearestHealTarget( "player", bot )
 			end
 			
 			if bot.Task != 13 then
-				bot.FollowerEnt.TargetTeammate = FindNearestTeammate( "player", bot, 999999 )
+				bot.FollowerEnt.TargetTeammate = FindNearestTeammate( "player", bot )
 			else
-				bot.FollowerEnt.TargetTeammate = FindNearestPlayerTeammate( "player", bot, 999999 )
+				bot.FollowerEnt.TargetTeammate = FindNearestPlayerTeammate( "player", bot )
 			end
 		end
 	end
@@ -313,7 +313,7 @@ function controlBots ( bot, cmd )
 	--print (#bot.FollowerEnt.TargetArsenal.DefendingSpots)
 	
 	if IsValid (bot:GetActiveWeapon()) and bot:Team() != TEAM_UNDEAD then
-		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() then
+		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() - 0.05 then
 			bot.reloadHold = true
 		end
 	end
