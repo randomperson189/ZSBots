@@ -36,7 +36,7 @@ function ENT:ChasePos( options )
 			if self.Bot.Task == GOTO_ARSENAL then
 				if self.Bot:Team() != TEAM_UNDEAD then
 					if IsValid( self.TargetArsenal ) then
-						if self.Bot:GetPos():Distance( self.TargetArsenal:GetPos() ) > 100 then
+						if self.Bot:GetPos():QuickDistanceCheck( self.TargetArsenal:GetPos(), BIGGER, 80 ) then
 							self:ComputePath (self.P, self.TargetArsenal:GetPos())
 						end
 					end
@@ -63,7 +63,7 @@ function ENT:ChasePos( options )
 			
 			if self.Bot.Task == HEAL_TEAMMATE then
 				if IsValid( self.TargetHealing ) then 
-					self:ComputePath (self.P, self.TargetTeammate:GetPos())
+					self:ComputePath (self.P, self.TargetHealing:GetPos())
 				end
 			end
 			
@@ -88,7 +88,7 @@ function ENT:ChasePos( options )
 			end
 			
 			if IsValid( self.TargetResupply ) and self.Bot.Task == RESUPPLY_AMMO then
-				--if self.Bot:GetPos():Distance( self.TargetResupply:GetPos() ) > 100 then
+				--if self.Bot:GetPos():QuickDistanceCheck( self.TargetResupply:GetPos(), BIGGER, 100 ) then
 					self:ComputePath (self.P, self.TargetResupply:GetPos())
 				--end
 			end
