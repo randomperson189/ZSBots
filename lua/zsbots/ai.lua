@@ -979,7 +979,7 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetNailedProp
 			bot.Disposition = IGNORE_ENEMIES
 			
-			if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) then
+			if bot:Health() <= (1.5 / 4 * bot:GetMaxHealth()) then
 				
 				if IsValid (bot.lastWeapon) then
 					cmd:SelectWeapon (bot.lastWeapon)
