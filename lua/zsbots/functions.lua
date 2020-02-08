@@ -1,10 +1,10 @@
 -- HUMAN TASKS
 GOTO_ARSENAL = 1
-MELEE_ZOMBIES = 2
+MELEE_ZOMBIE = 2
 HEAL_TEAMMATE = 3
 PLACE_RESUPPLY = 4
 WANDER_AROUND = 5
-REPAIR_CADES = 6
+REPAIR_CADE = 6
 PICKUP_CADING_PROP = 7
 MAKE_CADE = 8
 RESUPPLY_AMMO = 9
@@ -37,6 +37,18 @@ if not plymeta then return end
 
 local entmeta = FindMetaTable("Entity")
 if not entmeta then return end
+
+--[[if IsValid(bot.FollowerEnt.TargetArsenal) then
+		for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
+			debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
+		end
+		
+		for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
+			if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+				debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
+			end
+		end
+	end]]
 
 function plymeta:DispositionCheck( cmd, enemy )
 	if self.Disposition == IGNORE_ENEMIES or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
@@ -248,6 +260,13 @@ function plymeta:InputTimers()
 end
 
 function plymeta:InputCheck(cmd)
+	if self:IsFrozen() then 
+		self.moveType = -1
+		self.cJumpDelay = 0
+		
+		return
+	end
+	
 	if self.moveType == -1 then
 		self.cJumpDelay = 0
 		cmd:SetForwardMove( 0 )
@@ -603,6 +622,22 @@ function FindNearestTeammate( className, thisEnt, range )
     return nearestEnt
 end
 
+function FindNearestHealTarget( className, thisEnt, range )
+
+	local nearestEnt
+    
+    for i, entity in ipairs( ents.FindByClass( className ) ) do 
+    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+        if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() and entity:Health() <= (3 / 4 * entity:GetMaxHealth()) ) then
+        
+            nearestEnt = entity
+            range = distance
+            
+        end 
+    end 
+    return nearestEnt
+end
+
 function FindNearestPlayerTeammate( className, thisEnt, range )
 
 	local nearestEnt
@@ -833,12 +868,12 @@ function MoveToPosition (bot, position, cmd)
 	end
 end
 
-function OtherWeaponWithAmmo(bot)
+function plymeta:GetOtherWeaponWithAmmo()
 	local daWep = nil
 	
-	for i, wep in ipairs(bot:GetWeapons()) do 
-		if wep:Clip1() > 0 or bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) > 0 then
-			if wep.Base != "weapon_zs_basemelee" then
+	for i, wep in ipairs(self:GetWeapons()) do 
+		if wep:Clip1() > 0 or self:GetAmmoCount( wep:GetPrimaryAmmoType() ) > 0 then
+			if !wep.IsMelee and !wep.Primary.Heal then
 				daWep = wep
 				
 				break
@@ -1387,11 +1422,11 @@ end
 function plymeta:GetTaskName()
 	local humanNames = { 
 	"GOTO_ARSENAL",
-	"MELEE_ZOMBIES",
+	"MELEE_ZOMBIE",
 	"HEAL_TEAMMATE", 
 	"PLACE_RESUPPLY", 
 	"WANDER_AROUND", 
-	"REPAIR_CADES", 
+	"REPAIR_CADE", 
 	"GOTO_CADING_PROP", 
 	"MAKE_CADE", 
 	"RESUPPLY_AMMO", 
@@ -1459,25 +1494,8 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 			bot.cJumpDelay = bot.cJumpDelay + FrameTime()
 		end
 		
-		if bot.cJumpDelay >= 1 then
-			if bot:GetVelocity():Length() < 40 then
-				bot.cJumpTimer = true
-			end
-			
-			--debugoverlay.Box( bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25, Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ), Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ), 0, Color( 255, 255, 255 ) )
-			
-			
-			--local th = util.TraceHull( {
-				--start = bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25,
-				--endpos = bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25,
-				--mins = Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ),
-				--maxs = Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ),
-				--filter = function( ent ) if ( ent != bot and ent:GetClass() != "player" and ent:GetClass() != "func_breakable" ) then return true end end
-			--} )
-			
-			--if th.Hit then
-				--bot.cJumpTimer = true
-			--end
+		if bot.cJumpDelay >= 1 and bot:GetVelocity():Length() < 40 then
+			bot.cJumpTimer = true
 		end
 	end
 	

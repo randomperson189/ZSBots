@@ -68,19 +68,18 @@ function controlBots ( bot, cmd )
 	debugoverlay.EntityTextAtPosition(bot:EyePos(), 0, "Nav Area: " .. tostring(navmesh.GetNavArea( bot:EyePos(), math.huge )), 0, Color(255, 255, 255))
 	--=====================
 	]]
+	
 	-- Switch weapons if got no ammo
 	if bot.Task == 1 or bot.Task == 5 or bot.Task == 11 or bot.Task == 13 then
 		if bot:Team() != TEAM_UNDEAD and CurTime() > bot.targetFindDelay and bot.runAwayTimer <= 0 then
 			
 			if IsValid(bot:GetActiveWeapon()) then
-				curWep = bot:GetActiveWeapon()
+				local curWep = bot:GetActiveWeapon()
 				
-				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee then	
-					if OtherWeaponWithAmmo(bot) != nil then
-						bot:SelectWeapon(OtherWeaponWithAmmo(bot))
-					end
-					
-					if OtherWeaponWithAmmo(bot) == nil then
+				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee or curWep.Primary.Heal then	
+					if bot:GetOtherWeaponWithAmmo() != nil then
+						bot:SelectWeapon(bot:GetOtherWeaponWithAmmo())
+					else
 						for i, meleeWep in ipairs(bot:GetWeapons()) do 
 							if meleeWep.IsMelee then
 								bot:SelectWeapon(meleeWep)
@@ -91,11 +90,9 @@ function controlBots ( bot, cmd )
 					end
 				end
 			else	
-				if OtherWeaponWithAmmo(bot) != nil then
-					bot:SelectWeapon(OtherWeaponWithAmmo(bot))
-				end
-				
-				if OtherWeaponWithAmmo(bot) == nil then
+				if bot:GetOtherWeaponWithAmmo() != nil then
+					bot:SelectWeapon(bot:GetOtherWeaponWithAmmo())
+				else
 					for i, meleeWep in ipairs(bot:GetWeapons()) do 
 						if meleeWep.IsMelee then
 							bot:SelectWeapon(meleeWep)
@@ -162,9 +159,11 @@ function controlBots ( bot, cmd )
 		bot.rotationSpeed = defaultRotationSpeed
 	end
 	
-	local lerpAngle = LerpAngle( bot.rotationSpeed * FrameTime( ), bot:EyeAngles(), bot.lookAngle )
-	bot:SetEyeAngles(lerpAngle)
-	cmd:SetViewAngles(lerpAngle)
+	if !bot:IsFrozen() then
+		local lerpAngle = LerpAngle( bot.rotationSpeed * FrameTime( ), bot:EyeAngles(), bot.lookAngle )
+		bot:SetEyeAngles(lerpAngle)
+		cmd:SetViewAngles(lerpAngle)
+	end
 	
 	if !IsValid( bot.FollowerEnt ) then
 		bot.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
@@ -231,6 +230,10 @@ function controlBots ( bot, cmd )
 			bot.FollowerEnt.TargetLootItem = FindNearestLoot( bot, 999999 )
 			bot.FollowerEnt.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot, 999999 )
 			bot.FollowerEnt.TargetResupply = FindNearestEntity( "prop_resupplybox", bot, 999999 )
+			
+			if bot:HasWeapon ("weapon_zs_medicalkit") then
+				bot.FollowerEnt.TargetHealing = FindNearestHealTarget( "player", bot, 999999 )
+			end
 			
 			if bot.Task != 13 then
 				bot.FollowerEnt.TargetTeammate = FindNearestTeammate( "player", bot, 999999 )
@@ -340,18 +343,18 @@ function controlBots ( bot, cmd )
 				end
 			end
 		end
+	end
+	
+	--if bot:HasWeapon ("weapon_zs_medicalkit") and bot:Health() <= 70 then
+		--cmd:SetButtons(IN_ATTACK2)
+	--end
+	
+	if IsValid (bot.FollowerEnt.TargetHealing) and bot:HasWeapon("weapon_zs_medicalkit") and bot.Task != HEAL_TEAMMATE then
+		local medWeapon = bot:GetWeapon("weapon_zs_medicalkit")
+		local medCooldown = medWeapon:GetNextCharge() - CurTime()
 		
-		--if bot:HasWeapon ("weapon_zs_medicalkit") and bot:Health() <= 70 then
-			--cmd:SetButtons(IN_ATTACK2)
-		--end
-		
-		if IsValid (bot.FollowerEnt.TargetTeammate) and bot:HasWeapon("weapon_zs_medicalkit") and bot.Task != 2 then
-			local medWeapon = bot:GetWeapon("weapon_zs_medicalkit")
-			local medCooldown = medWeapon:GetNextCharge() - CurTime()
-			
-			if bot.FollowerEnt.TargetTeammate:Health() <= (3 / 4 * bot.FollowerEnt.TargetTeammate:GetMaxHealth()) and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and medCooldown <= 0 and medWeapon:GetPrimaryAmmoCount() > 0 then
-				bot.Task = HEAL_TEAMMATE
-			end
+		if --[[bot.FollowerEnt.TargetTeammate:Health() <= (3 / 4 * bot.FollowerEnt.TargetTeammate:GetMaxHealth()) and]] bot:Health() > (2 / 4 * bot:GetMaxHealth()) and medCooldown <= 0 and medWeapon:GetPrimaryAmmoCount() > 0 then
+			bot.Task = HEAL_TEAMMATE
 		end
 	end
 		
@@ -375,8 +378,8 @@ function controlBots ( bot, cmd )
 							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 						} )
 						
-						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
-							bot.Task = MELEE_ZOMBIES
+						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
+							bot.Task = MELEE_ZOMBIE
 						end
 					end
 				end
@@ -452,13 +455,13 @@ function controlBots ( bot, cmd )
 							curWep = bot:GetActiveWeapon()
 							
 							if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep.Base != "weapon_zs_basemelee" then
-								if OtherWeaponWithAmmo(bot) == nil then
+								if bot:GetOtherWeaponWithAmmo() == nil then
 									bot.Task = RESUPPLY_AMMO
 								end
 							end
 							
 							if curWep.IsMelee then
-								if OtherWeaponWithAmmo(bot) == nil then
+								if bot:GetOtherWeaponWithAmmo() == nil then
 									for i, wep in ipairs(bot:GetWeapons()) do
 										if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep.Base != "weapon_zs_basemelee" then
 											bot:SelectWeapon(wep)
@@ -478,8 +481,8 @@ function controlBots ( bot, cmd )
 							end
 						end
 						if IsValid (bot.FollowerEnt.TargetNailedProp) and !bot.BuffMuscular then
-							if bot:HasWeapon("weapon_zs_hammer") and bot:Health() > (3 / 4 * bot:GetMaxHealth()) then
-								bot.Task = REPAIR_CADES
+							if bot:HasWeapon("weapon_zs_hammer") and bot:Health() > (1.5 / 4 * bot:GetMaxHealth()) then
+								bot.Task = REPAIR_CADE
 							end	
 						end
 						
@@ -807,7 +810,7 @@ function controlBots ( bot, cmd )
 	--Zombies: (Shade) Pickup props and throw them at humans
 	if bot.Task == 3 then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetTeammate
+			local myTarget = bot.FollowerEnt.TargetHealing
 			
 			if bot:HasWeapon("weapon_zs_medicalkit") then
 				
@@ -830,13 +833,13 @@ function controlBots ( bot, cmd )
 				end
 				
 				if IsValid (myTarget) then
-					if myTarget:Health() > (3 / 4 * myTarget:GetMaxHealth()) then --or bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit"
+					--[[if myTarget:Health() > (3 / 4 * myTarget:GetMaxHealth()) then --or bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit"
 						if IsValid (bot.lastWeapon) then
 							cmd:SelectWeapon (bot.lastWeapon)
 						end
 					
 						bot.Task = GOTO_ARSENAL
-					end
+					end]]
 					
 					if bot:GetMoveType() == MOVETYPE_LADDER then
 					
@@ -955,8 +958,8 @@ function controlBots ( bot, cmd )
 					} )
 					
 					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then					
-						if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
-							bot.Task = MELEE_ZOMBIES
+						if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
+							bot.Task = MELEE_ZOMBIE
 						end
 					end
 				end
@@ -1405,7 +1408,7 @@ function controlBots ( bot, cmd )
 								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 							} )
 							
-							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(OtherWeaponWithAmmo(bot)) then
+							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
 								bot.Task = MELEE_ZOMBIES
 							end
 						end
