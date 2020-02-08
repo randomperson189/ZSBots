@@ -221,10 +221,10 @@ function controlBots ( bot, cmd )
 			elseif AnEnemyIsInSight("player", bot) then
 				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
 			else
-				bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot, 999999 )
+				bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot )
 			end
 		else
-			bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, 999999 )
+			bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
 			bot.FollowerEnt.TargetNailedProp = FindNearestNailedProp( bot, 999999 )
 			bot.FollowerEnt.TargetCadingProp = FindNearestProp( bot, 999999 )
 			bot.FollowerEnt.TargetLootItem = FindNearestLoot( bot, 999999 )

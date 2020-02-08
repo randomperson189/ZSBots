@@ -554,12 +554,13 @@ function CountNearbyEnemies( bot, radius )
 end
 
 --------------FIND NEAREST--------------------------------------
-function FindNearestEnemy( className, thisEnt, range )
-
+function FindNearestEnemy( className, thisEnt )
+	
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:GetZombieClassTable().Name != "Crow" ) then
         
             nearestEnt = entity
@@ -589,12 +590,13 @@ function AnEnemyIsInSight(className, thisEnt)
     return false
 end
 
-function FindNearestEnemyInSight( className, thisEnt, range )
+function FindNearestEnemyInSight( className, thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
 		
 		local tr = util.TraceLine( {
 			start = thisEnt:EyePos(),
@@ -613,12 +615,13 @@ function FindNearestEnemyInSight( className, thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestEntity( className, thisEnt, range )
+function FindNearestEntity( className, thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range ) then
         
             nearestEnt = entity
@@ -629,12 +632,13 @@ function FindNearestEntity( className, thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestTeammate( className, thisEnt, range )
+function FindNearestTeammate( className, thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() ) then
         
             nearestEnt = entity
@@ -645,12 +649,13 @@ function FindNearestTeammate( className, thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestHealTarget( className, thisEnt, range )
+function FindNearestHealTarget( className, thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() and entity:Health() <= (3 / 4 * entity:GetMaxHealth()) ) then
         
             nearestEnt = entity
@@ -661,12 +666,13 @@ function FindNearestHealTarget( className, thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestPlayerTeammate( className, thisEnt, range )
+function FindNearestPlayerTeammate( className, thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range and entity != thisEnt and !entity:IsBot() and entity:Team() == thisEnt:Team() ) then
         
             nearestEnt = entity
@@ -677,12 +683,13 @@ function FindNearestPlayerTeammate( className, thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestProp( thisEnt, range )
+function FindNearestProp( thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindInSphere( thisEnt:GetPos(), 550 ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range ) then
         	if entity:GetClass() == "prop_physics" or entity:GetClass() == "prop_physics_multiplayer" then
         		if !entity:IsNailed() then
@@ -695,12 +702,13 @@ function FindNearestProp( thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestPropOrBreakable( thisEnt, range )
+function FindNearestPropOrBreakable( thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindInSphere( thisEnt:GetPos(), 550 ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range ) then
         	if entity:GetClass() == "prop_physics" or entity:GetClass() == "prop_physics_multiplayer" or entity:GetClass() == "func_breakable" or entity:GetClass() == "func_door_rotating" then
             	nearestEnt = entity
@@ -711,12 +719,13 @@ function FindNearestPropOrBreakable( thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestNailedPropOrBreakable( thisEnt, range )
+function FindNearestNailedPropOrBreakable( thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindInSphere( thisEnt:GetPos(), 550 ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range ) then
         	if entity:GetClass() == "prop_physics" or entity:GetClass() == "prop_physics_multiplayer" then
         		if entity:IsNailed() then
@@ -733,12 +742,13 @@ function FindNearestNailedPropOrBreakable( thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestNailedProp( thisEnt, range )
+function FindNearestNailedProp( thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindInSphere( thisEnt:GetPos(), 550 ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
         if ( distance <= range ) then
         	if entity:GetClass() == "prop_physics" or entity:GetClass() == "prop_physics_multiplayer" then
         		if entity:IsNailed() then
@@ -753,12 +763,13 @@ function FindNearestNailedProp( thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestLoot( thisEnt, range )
+function FindNearestLoot( thisEnt )
 
 	local nearestEnt
+	local range = math.huge
     
     for i, entity in ipairs( ents.FindInSphere( thisEnt:GetPos(), 550 ) ) do 
-    	local distance = thisEnt:GetPos():Distance( entity:GetPos() )
+    	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
 		if ( distance <= range ) then
 			if IsValid( thisEnt:GetActiveWeapon() ) then
 				if entity:GetClass() == "prop_weapon" then
@@ -781,12 +792,13 @@ function FindNearestLoot( thisEnt, range )
     return nearestEnt
 end
 
-function FindNearestHidingSpot( thisEnt, range )
+function FindNearestHidingSpot( thisEnt )
 	local nearestSpot
+	local range = math.huge
     
     for i, area in ipairs( navmesh:GetAllNavAreas( thisEnt:GetPos(), 0 ) ) do 
 		for i2, spot in ipairs( area:GetHidingSpots() ) do
-			local distance = thisEnt:GetPos():Distance( spot )
+			local distance = thisEnt:GetPos():DistToSqr( spot )
 			
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
@@ -804,12 +816,13 @@ function FindNearestHidingSpot( thisEnt, range )
     return nearestSpot
 end
 
-function FindNearestSniperSpot( thisEnt, range )
+function FindNearestSniperSpot( thisEnt )
 	local nearestSpot
+	local range = math.huge
     
     for i, area in ipairs( navmesh:GetAllNavAreas( thisEnt:GetPos(), 0 ) ) do 
 		for i2, spot in ipairs( area:GetExposedSpots() ) do
-			local distance = thisEnt:GetPos():Distance( spot )
+			local distance = thisEnt:GetPos():DistToSqr( spot )
 			
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
