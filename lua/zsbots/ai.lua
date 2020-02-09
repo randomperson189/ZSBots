@@ -418,7 +418,7 @@ function controlBots ( bot, cmd )
 							bot:DoLadderMovement( cmd, curgoal )
 					
 						else
-							bot.b = true
+							
 							
 							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 							
@@ -556,12 +556,12 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )	
 				
 					else
-						bot.b = true
+						
 					end
 				else
 					bot.moveType = -1
 				
-					bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
+					bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
 				end
 				
 				if !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
@@ -586,10 +586,12 @@ function controlBots ( bot, cmd )
 				
 				if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER_OR_EQUAL, 45 ) and bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), SMALLER, 400 ) and !tr.Hit and !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
 					if bot:GetZombieClassTable().Name == "Fast Zombie" then
-						bot.lookAngle = (bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - Vector(bot:EyePos().x, bot:EyePos().y, bot:EyePos().z - (bot:GetPos():Distance( myTarget:GetPos()) / 4 ) ) ):Angle()
+						local aimPoint = bot:AimPoint( bot.FollowerEnt.TargetEnemy )
+						
+						bot:SetLookAt(Vector(aimPoint.x, aimPoint.y, aimPoint.z + (bot:GetPos():Distance( myTarget:GetPos()) / 4 )))
 						bot.attack2Timer = true
 					else
-						bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
+						bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
 					end
 				end
 				
@@ -610,11 +612,18 @@ function controlBots ( bot, cmd )
 				mr = mr - 10
 			
 				if mr < 0 then mr = 0 end
-			
+				
+				local direction
+				if bot:GetMoveType() != MOVETYPE_LADDER then
+					direction = bot:EyeAngles()
+				else
+					direction = bot:GetUp():Angle()
+				end
+				
 				if bot.lookPos != nil then
 					bot.moveType = -1
 					
-					bot.lookAngle = ((bot.lookPos - bot:EyePos()):Angle())
+					bot:SetLookAt(bot.lookPos)
 			
 					bot.attackTimer = true
 					
@@ -633,10 +642,9 @@ function controlBots ( bot, cmd )
 						bot.lookPos = nil
 					end
 				else
-				
 					local tr = util.TraceLine( {
 						start = bot:EyePos(),
-						endpos = bot:EyePos() + bot:EyeAngles():Forward() * mr,
+						endpos = bot:EyePos() + direction:Forward() * mr,
 						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
 					} )
 					
@@ -649,7 +657,7 @@ function controlBots ( bot, cmd )
 					
 					local tr2 = util.TraceLine( {
 						start = bot:EyePos(),
-						endpos = bot:EyePos() + Angle(bot:EyeAngles().x - 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
+						endpos = bot:EyePos() + Angle(direction.x - 25, direction.y, direction.z):Forward() * mr,
 						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
 					} )
 					
@@ -662,7 +670,7 @@ function controlBots ( bot, cmd )
 					
 					local tr3 = util.TraceLine( {
 						start = bot:EyePos(),
-						endpos = bot:EyePos() + Angle(bot:EyeAngles().x + 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
+						endpos = bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * mr,
 						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
 					} )
 					
@@ -677,9 +685,9 @@ function controlBots ( bot, cmd )
 				--print (bot.lookPos)
 				if IsValid (bot:GetActiveWeapon()) then
 					if bot:GetActiveWeapon().MeleeReach != nil then
-						debugoverlay.Line( bot:EyePos(), bot:EyePos() + bot:EyeAngles():Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
-						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(bot:EyeAngles().x - 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
-						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(bot:EyeAngles().x + 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
+						debugoverlay.Line( bot:EyePos(), bot:EyePos() + direction:Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
+						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x - 25, direction.y, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
+						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
 					end
 				end
 			end
@@ -698,30 +706,29 @@ function controlBots ( bot, cmd )
 	--Zombies: Go to hiding spot
 	if bot.Task == 2 then
 		if bot:Team() != TEAM_UNDEAD then
-			--if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 500 ) then
-				--cmd:SetForwardMove( 1000 )
-				--
+			--[[if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 500 ) then
+				cmd:SetForwardMove( 1000 )
 				
-				--if bot:GetMoveType() == MOVETYPE_LADDER then
+				if bot:GetMoveType() == MOVETYPE_LADDER then
 				
-					--bot:DoLadderMovement( cmd, curgoal )
+					bot:DoLadderMovement( cmd, curgoal )
 					
-				--else
-					--CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
-				--end
-			--elseif bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 250 ) then 
-				--bot.moveType = -1
+				else
+					CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
+				end
+			elseif bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 250 ) then 
+				bot.moveType = -1
 				
-				--bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
+				bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
 				
-				--bot.attackTimer = true
-			--else
-				--bot.moveType = 4
+				bot.attackTimer = true
+			else
+				bot.moveType = 4
 				
-				--bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
+				bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
 				
-				--bot.attackTimer = true
-			--end
+				bot.attackTimer = true
+			end]]
 			
 			local myTarget = bot.FollowerEnt.TargetEnemy
 			
@@ -732,7 +739,7 @@ function controlBots ( bot, cmd )
 					bot:DoLadderMovement( cmd, curgoal )	
 		
 				else
-					bot.b = true
+					
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 150 ) then -- was 45
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
@@ -750,7 +757,7 @@ function controlBots ( bot, cmd )
 					end
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), SMALLER, 400 ) then
-						bot.lookAngle = ((bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle())
+						bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
 					end
 				end
 			end
@@ -786,7 +793,7 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )	
 						
 					else
-						bot.b = true
+						
 						
 						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
 					end
@@ -840,16 +847,16 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )
 				
 					else
-						bot.b = true
+						
 							
 						if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 45 ) then
 							
-							bot.lookAngle = ((myTarget:EyePos() - bot:EyePos()):Angle())
+							bot:SetLookAt(myTarget:EyePos())
 							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
 						else
 							bot.moveType = -1
 						
-							bot.lookAngle = ((myTarget:EyePos() - bot:EyePos()):Angle())
+							bot:SetLookAt(myTarget:EyePos())
 						
 							bot.attackTimer = true
 						end
@@ -904,7 +911,7 @@ function controlBots ( bot, cmd )
 				bot:DoLadderMovement( cmd, curgoal )
 				
 			else
-				bot.b = true
+				
 				
 				CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
 				
@@ -1014,7 +1021,7 @@ function controlBots ( bot, cmd )
 				if bot.lookPos != nil then
 					bot.moveType = -1
 			
-					bot.lookAngle = ((bot.lookPos - bot:EyePos()):Angle())
+					bot:SetLookAt(bot.lookPos)
 				
 					bot.attackTimer = true
 					
@@ -1024,7 +1031,7 @@ function controlBots ( bot, cmd )
 				else
 					CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
 					
-					bot.lookAngle = ((myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle())
+					bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 					
 					local tr = util.TraceLine( {
 						start = bot:EyePos(),
@@ -1092,16 +1099,16 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )
 					
 					else
-						bot.b = true
+						
 						
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
-						bot.lookAngle = ((myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle())
+						bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 					end
 			
 				else
 					bot.moveType = -1
 					
-					bot.lookAngle = ((myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle())
+					bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 					bot.useTimer = true
 				end
 				
@@ -1147,7 +1154,7 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )
 					
 					else
-						bot.b = true
+						
 						
 						bot:LookatPosXY( cmd, myTarget )
 						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
@@ -1173,7 +1180,7 @@ function controlBots ( bot, cmd )
 						bot.sprintHold = true
 					end
 					bot.attack2Timer = true
-					--bot.lookAngle = ((myTarget - bot:EyePos()):Angle())
+					--bot:SetLookAt(myTarget)
 					bot.lookAngle = Angle(bot.lookAngle.x + 0.5, (myTarget - bot:EyePos()):Angle().y, bot.lookAngle.z)
 					--bot.Task = GOTO_ARSENAL
 					if bot.lookAngle.x >= 89 then 
@@ -1221,16 +1228,16 @@ function controlBots ( bot, cmd )
 					bot:DoLadderMovement( cmd, curgoal )
 					
 				else
-					bot.b = true
+					
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 75 ) then
 							
-						bot.lookAngle = (myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle()
+						bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
 					else
 						bot.moveType = -1
 						
-						bot.lookAngle = (myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle()
+						bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 						bot.useTimer = true
 						bot.Task = GOTO_ARSENAL
 					end
@@ -1264,25 +1271,25 @@ function controlBots ( bot, cmd )
 					bot:DoLadderMovement( cmd, curgoal )
 				
 				else
-					bot.b = true
+					
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:LocalToWorld(myTarget:OBBCenter()), BIGGER, 250 ) then
 									
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
 						
-						bot.lookAngle = ((myTarget:EyePos() - bot:EyePos()):Angle())
+						bot:SetLookAt(myTarget:EyePos())
 							
 					elseif bot:GetPos():QuickDistanceCheck( myTarget:LocalToWorld(myTarget:OBBCenter()), BIGGER, 30 ) then
 						
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
-						bot.lookAngle = ((myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle())
+						bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 						
 						bot.crouchHold = true
 						bot.useTimer = true
 					else
 						bot.moveType = -1
 						
-						bot.lookAngle = ((myTarget:LocalToWorld(myTarget:OBBCenter()) - bot:EyePos()):Angle())
+						bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 						
 						bot.useTimer = true
 						bot.crouchHold = true
@@ -1306,41 +1313,47 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
 			bot.Disposition = OPPORTUNITY_FIRE
 			
-			if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-				
-				bot.guardTimer = bot.guardTimer - FrameTime()
-				--print (bot.guardTimer)
-				
-				if bot.guardTimer <= 0 then
-					if math.random(0, 1) == 0 then
-						bot.Task = GOTO_ARSENAL
-						
-						bot.guardTimer = math.random( 5, 10 )
-					else
-						bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-						
-						bot.guardTimer = math.random( 5, 10 )					
+			if IsValid(bot.FollowerEnt.TargetArsenal) then
+				if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+					
+					bot.guardTimer = bot.guardTimer - FrameTime()
+					--print (bot.guardTimer)
+					
+					if bot.guardTimer <= 0 then
+						if math.random(0, 1) == 0 then
+							bot.Task = GOTO_ARSENAL
+							
+							bot.guardTimer = math.random( 5, 10 )
+						else
+							bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+							
+							bot.guardTimer = math.random( 5, 10 )					
+						end
 					end
-				end
-				
-				
-				if bot:GetMoveType() == MOVETYPE_LADDER then
 					
-					bot:DoLadderMovement( cmd, curgoal )
 					
-				else
-					bot.b = true
-					
-					if bot:GetPos():QuickDistanceCheck( myTarget, BIGGER, 125 ) then
-						bot:LookatPosXY( cmd, myTarget )
-						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)					
+					if bot:GetMoveType() == MOVETYPE_LADDER then
+						
+						bot:DoLadderMovement( cmd, curgoal )
+						
 					else
-						bot.moveType = -1
+						
+						
+						if bot:GetPos():QuickDistanceCheck( myTarget, BIGGER, 125 ) then
+							bot:LookatPosXY( cmd, myTarget )
+							CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)					
+						else
+							bot.moveType = -1
+						end
 					end
 				end
 			end
 			
-			if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
+			if IsValid (bot.FollowerEnt.TargetArsenal) then
+				if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
+					bot.Task = GOTO_ARSENAL
+				end
+			else
 				bot.Task = GOTO_ARSENAL
 			end
 		end
@@ -1360,7 +1373,7 @@ function controlBots ( bot, cmd )
 					bot:DoLadderMovement( cmd, curgoal )
 			
 				else
-					bot.b = true
+					
 					
 					bot.Disposition = IGNORE_ENEMIES
 					CloseToPointCheck (bot, curgoal.pos, myTarget, cmd)
@@ -1385,7 +1398,7 @@ function controlBots ( bot, cmd )
 					bot:DoLadderMovement( cmd, curgoal )
 			
 				else
-					bot.b = true
+					
 					
 					local atr = util.TraceLine( {
 						start = bot:EyePos(),

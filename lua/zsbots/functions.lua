@@ -73,6 +73,10 @@ function vecmeta:QuickDistanceCheck(otherVector, checkType, dist)
 	return nil
 end
 
+function plymeta:SetLookAt(position)
+	self.lookAngle = (position - self:EyePos()):Angle()
+end
+
 function plymeta:DispositionCheck( cmd, enemy )
 	if self.Disposition == IGNORE_ENEMIES or self:Team() == TEAM_UNDEAD or !IsValid(enemy) or !enemy:Alive() or self:GetMoveType() == MOVETYPE_LADDER then return end
 	
@@ -86,7 +90,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 	if self.Disposition == ENGAGE_AND_INVESTIGATE then --ENGAGE_AND_INVESTIGATE
 		if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
-				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
+				self:SetLookAt(self:AimPoint( self.FollowerEnt.TargetEnemy ))
 				
 				self:ShootAtTarget()
 			end
@@ -96,7 +100,7 @@ function plymeta:DispositionCheck( cmd, enemy )
 	elseif self.Disposition == OPPORTUNITY_FIRE then --OPPORTUNITY_FIRE
 		if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
-				self.lookAngle = ((self:AimPoint( self.FollowerEnt.TargetEnemy ) - self:EyePos()):Angle())
+				self:SetLookAt(self:AimPoint( self.FollowerEnt.TargetEnemy ))
 				
 				if self.Skill > 25 and IsValid(self:GetActiveWeapon()) then
 					if self:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() then
@@ -142,6 +146,8 @@ function plymeta:InputTimers()
 		self.attackTimer = false
 	end
 	
+	-----------------------------------------------------------------------------------------
+	
 	if self.canZoomTimer then
 		if self.zoomTimer then
 			self.canZoomTimer = false
@@ -159,6 +165,8 @@ function plymeta:InputTimers()
 			end)
 		end
 	end
+	
+	-----------------------------------------------------------------------------------------
 	
 	if self.canUseTimer then
 		if self.useTimer then
@@ -179,6 +187,8 @@ function plymeta:InputTimers()
 		end
 	end
 	
+	-----------------------------------------------------------------------------------------
+	
 	if self.canAttack2Timer then
 		if self.attack2Timer then
 			self.canAttack2Timer = false
@@ -192,6 +202,8 @@ function plymeta:InputTimers()
 			end)
 		end
 	end
+	
+	-----------------------------------------------------------------------------------------
 	
 	if self.canDeployTimer then
 		if self.deployTimer then
@@ -217,6 +229,8 @@ function plymeta:InputTimers()
 			end)
 		end
 	end
+	
+	-----------------------------------------------------------------------------------------
 	
 	if self.canCJumpTimer and self:GetZombieClassTable().Name != "Crow" then
 		if self.cJumpTimer then
@@ -280,6 +294,33 @@ function plymeta:InputTimers()
 			end)
 		end
 	end
+	
+	-----------------------------------------------------------------------------------------
+	
+	if self.canExitLadderCheck and self.exitLadderCheck then
+		self.canExitLadderCheck = false
+		
+		self.lastPos = self:GetPos()
+		
+		timer.Simple (0.1, function()
+			if !IsValid(self) then return end
+			
+			if self:GetPos() == self.lastPos then	
+				self.useHold = true
+				
+				timer.Simple (0.05,function() 
+					if !IsValid(self) then return end
+					if self:GetMoveType() == MOVETYPE_LADDER then
+						if !IsValid(self) then return end
+						self.jumpHold = true
+					end
+				end)
+			end
+			
+			self.exitLadderCheck = false
+			self.canExitLadderCheck = true
+		end)
+	end
 end
 
 function plymeta:InputCheck(cmd)
@@ -295,41 +336,42 @@ function plymeta:InputCheck(cmd)
 		cmd:SetForwardMove( 0 )
 		cmd:SetSideMove( 0 )
 	elseif self.moveType == 0 then
-		cmd:SetForwardMove( 1000 )
+		cmd:SetForwardMove( 20000 )
 		cmd:SetSideMove( 0 )
 	elseif self.moveType == 1 then
-		cmd:SetForwardMove( 1000 )
-		cmd:SetSideMove( -1000 )
+		cmd:SetForwardMove( 20000 )
+		cmd:SetSideMove( -20000 )
 	elseif self.moveType == 2 then
 		cmd:SetForwardMove( 0 )
-		cmd:SetSideMove( -1000 )
+		cmd:SetSideMove( -20000 )
 	elseif self.moveType == 3 then
-		cmd:SetForwardMove( -1000 )
-		cmd:SetSideMove( -1000 )
+		cmd:SetForwardMove( -20000 )
+		cmd:SetSideMove( -20000 )
 	elseif self.moveType == 4 then
-		cmd:SetForwardMove( -1000 )
+		cmd:SetForwardMove( -20000 )
 		cmd:SetSideMove( 0 )
 	elseif self.moveType == 5 then
-		cmd:SetForwardMove( -1000 )
-		cmd:SetSideMove( 1000 )
+		cmd:SetForwardMove( -20000 )
+		cmd:SetSideMove( 20000 )
 	elseif self.moveType == 6 then
 		cmd:SetForwardMove( 0 )
-		cmd:SetSideMove( 1000 )
+		cmd:SetSideMove( 20000 )
 	elseif self.moveType == 7 then
-		cmd:SetForwardMove( 1000 )
-		cmd:SetSideMove( 1000 )
+		cmd:SetForwardMove( 20000 )
+		cmd:SetSideMove( 20000 )
 	end
 
 	if self.strafeType == 0 then
-		cmd:SetSideMove( 1000 )
+		cmd:SetSideMove( 20000 )
 	elseif self.strafeType == 1 then
-		cmd:SetSideMove( -1000 )
+		cmd:SetSideMove( -20000 )
 	else
 		--cmd:SetSideMove( 0 )
 	end
 	
 --------------------------------------------------
-
+	
+	local forward = 0
 	local attack = 0
 	local attack2 = 0
 	local reload = 0
@@ -338,6 +380,21 @@ function plymeta:InputCheck(cmd)
 	local use = 0
 	local zoom = 0
 	local sprint = 0
+	
+	if self:GetMoveType() != MOVETYPE_LADDER then self.forwardHold = false end
+	if self.forwardHold then
+		forward = IN_FORWARD
+	end
+	
+	if self.backHold then
+		back = IN_BACK
+	end
+	if self.leftHold then
+		left = IN_MOVELEFT
+	end
+	if self.rightHold then
+		right = IN_MOVERIGHT
+	end
 	
 	if self.attackHold then
 		attack = IN_ATTACK
@@ -412,7 +469,7 @@ function plymeta:InputCheck(cmd)
 		end)]]
 	end
 	
-	cmd:SetButtons(bit.bor( attack, attack2, reload, jump, crouch, use, zoom, sprint ))
+	cmd:SetButtons(bit.bor( forward, attack, attack2, reload, jump, crouch, use, zoom, sprint ))
 end
 
 function game.IsObj()
@@ -1119,11 +1176,13 @@ function player.CreateZSBot( name )
 		
 		--OTHER STUFF
 		ply.LastPath = nil
+		ply.lastPos = Vector(0, 0 , 0)
 		ply.lookProp = nil
 		ply.lookPos = nil
 		ply.lookDistance = 1000
 		ply.lastWeapon = nil
 		ply.heldProp = nil
+		ply.cJumpDelay = 0
 		ply.strafeType = -1 --0 = left, 1 = right, 2 = back
 		ply.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
 		ply.shouldGoOutside = false
@@ -1156,8 +1215,8 @@ function player.CreateZSBot( name )
 		ply.prevSay = -1
 		
 		--INPUT TIMERS
-		ply.canGetOffLadderTimer = true
-		ply.b = true
+		ply.canExitLadderCheck = true
+		ply.exitLadderCheck = false
 		
 		ply.canCJumpTimer = true
 		ply.cJumpTimer = false
@@ -1178,6 +1237,7 @@ function player.CreateZSBot( name )
 		ply.zoomTimer = false
 		
 		--INPUT VALUES
+		ply.forwardHold = false
 		ply.attackHold = false
 		ply.attack2Hold = false
 		ply.reloadHold = false
@@ -1551,21 +1611,21 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 end
 
 function plymeta:DoLadderMovement (cmd, curgoal)
-	if self.b then 
-		self.moveType = 0
-		self.cJumpDelay = 0
-		cmd:SetButtons( IN_FORWARD ) 
-		
-		local curgoalposXY = (Vector (curgoal.pos.x, curgoal.pos.y, 0) - Vector (self:EyePos().x, self:EyePos().y, 0)):Angle()
-		
-		self.lookAngle = Angle (-20, curgoalposXY.y, self:EyeAngles().z)
-		
-		--self.lookAngle = ((curgoal.pos - self:GetPos()):Angle())
-		
-		if self:Team() != TEAM_UNDEAD then self:SetBarricadeGhosting(true) end
-	end
-									
-	if self.canGetOffLadderTimer then
+	self.moveType = 0
+	self.forwardHold = true
+	self.cJumpDelay = 0
+	
+	local curgoalposXY = (Vector (curgoal.pos.x, curgoal.pos.y, 0) - Vector (self:EyePos().x, self:EyePos().y, 0)):Angle()
+	
+	self.lookAngle = Angle (-20, curgoalposXY.y, self:EyeAngles().z)
+	
+	--self:SetLookAt(curgoal.pos)
+	
+	if self:Team() != TEAM_UNDEAD then self:SetBarricadeGhosting(true) end
+	
+	if self.lookPos == nil then self.exitLadderCheck = true end
+	
+	--[[if self.canGetOffLadderTimer then
 		self.canGetOffLadderTimer = false
 		timer.Simple (5,function() 
 			if !IsValid(self) then return end
@@ -1587,7 +1647,7 @@ function plymeta:DoLadderMovement (cmd, curgoal)
 				end)
 			end)
 		end)
-	end
+	end]]
 end
 
 function plymeta:DoSpawnStuff( changeClass )
