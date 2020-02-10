@@ -216,12 +216,16 @@ function controlBots ( bot, cmd )
 			--bot.attackProp = FindNearestProp2( bot )
 			bot.FollowerEnt.TargetPosition = FindNearestHidingSpot( bot )
 			
-			if bot.Task == 2 then
-				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
-			elseif AnEnemyIsInSight("player", bot) then
-				bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
+			if ROUNDWINNER != bot:Team() then
+				if bot.Task == 2 then
+					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
+				elseif AnEnemyIsInSight("player", bot) then
+					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
+				else
+					bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot )
+				end
 			else
-				bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot )
+				bot.FollowerEnt.TargetEnemy = FindNearestTeammate( "player", bot )
 			end
 		else
 			bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
@@ -365,12 +369,13 @@ function controlBots ( bot, cmd )
 	if bot.Task == 1 then
 		if bot:Team() != TEAM_UNDEAD then
 			if game.IsObj() or GAMEMODE.ZombieEscape then bot.Task = FOLLOW end
+			if ROUNDWINNER == bot:Team() then bot.Task = WANDER_AROUND end
 			
-			if !game.IsObj() and !GAMEMODE.ZombieEscape then
+			if !game.IsObj() and !GAMEMODE.ZombieEscape and ROUNDWINNER != bot:Team() then
 				local myTarget = bot.FollowerEnt.TargetArsenal
 				
 				if IsValid (bot.FollowerEnt.TargetEnemy) then
-					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then
+					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then
 						local meleeTrace = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
@@ -394,7 +399,7 @@ function controlBots ( bot, cmd )
 					
 					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 					
-					--if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
+					--if IsValid (bot.FollowerEnt.TargetEnemy) then
 						if !lootTrace.Hit then
 							bot.Task = PICKUP_LOOT
 						end
@@ -497,17 +502,15 @@ function controlBots ( bot, cmd )
 							bot.canShouldGoOutside = false
 						end
 						
-						if IsValid (myTarget) then
-							if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and bot.shouldGoOutside then
-								bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
-								bot.Task = WANDER_AROUND
-							end
+						if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveStart() - 15 > CurTime() and bot.shouldGoOutside then
+							bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
+							bot.Task = WANDER_AROUND
 						end
 					end
 					
 					bot:CheckPropPhasing()
 					
-					--debugoverlay.Box( bot:GetPos(), Vector( -18, -18, 0 ), Vector( 18, 18, 73 ),0, Color( 255, 255, 255 ), false )
+					--debugoverlay.Box( bot:GetPos(), Vector( -18, -18, 0 ), Vector( 18, 18, 73 ), 0, Color( 255, 255, 255 ), false )
 					
 				else--if GAMEMODE:GetWave() != 0 then
 					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
@@ -518,7 +521,7 @@ function controlBots ( bot, cmd )
 		elseif IsValid( bot.FollowerEnt.TargetEnemy ) then
 			local myTarget = bot.FollowerEnt.TargetEnemy
 			
-			if bot:GetZombieClassTable().Name != "Crow" and myTarget:Alive() then
+			if bot:GetZombieClassTable().Name != "Crow" then
 				
 				local tr = util.TraceLine( {
 					start = bot:EyePos(),
@@ -527,7 +530,7 @@ function controlBots ( bot, cmd )
 				} )
 				
 				if !GAMEMODE:GetWaveActive() then
-					if tr.Hit and bot.FollowerEnt.TargetPosition != nil then
+					if tr.Hit and bot.FollowerEnt.TargetPosition != nil and ROUNDWINNER != bot:Team() then
 						bot.Task = HIDE_FROM_HUMANS
 					end
 				end
@@ -617,7 +620,7 @@ function controlBots ( bot, cmd )
 				if bot:GetMoveType() != MOVETYPE_LADDER then
 					direction = bot:EyeAngles()
 				else
-					direction = bot:GetUp():Angle()
+					direction = Angle(-90, bot:EyeAngles().y + 90, bot:EyeAngles().z)
 				end
 				
 				if bot.lookPos != nil then
@@ -782,7 +785,7 @@ function controlBots ( bot, cmd )
 				end
 			end
 			
-			if GAMEMODE:GetWaveActive() or myTarget == nil then
+			if GAMEMODE:GetWaveActive() or myTarget == nil or ROUNDWINNER == bot:Team() then
 				bot.Task = GOTO_HUMANS
 			end
 			
@@ -898,7 +901,7 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
 			if IsValid (bot.FollowerEnt.TargetArsenal) then
-				if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) or GAMEMODE:GetWaveActive() or GAMEMODE:GetWave() == 0 then
+				if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) or GAMEMODE:GetWaveActive() or GAMEMODE:GetWaveStart() - 15 <= CurTime() or GAMEMODE:GetWave() == 0 then
 					bot.newPointTimer = 15
 					bot.Task = GOTO_ARSENAL
 				end
@@ -950,7 +953,7 @@ function controlBots ( bot, cmd )
 					bot.newPointTimer = 15
 				end
 				
-				if IsValid (bot.FollowerEnt.TargetEnemy) and bot.FollowerEnt.TargetEnemy:Alive() then
+				if IsValid (bot.FollowerEnt.TargetEnemy) then
 					local tr = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
@@ -958,7 +961,7 @@ function controlBots ( bot, cmd )
 						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 					} )
 					
-					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then					
+					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then					
 						if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
 							bot.Task = MELEE_ZOMBIE
 						end
@@ -1407,7 +1410,7 @@ function controlBots ( bot, cmd )
 					} )
 					
 					if IsValid (bot.FollowerEnt.TargetEnemy) and !GAMEMODE.ZombieEscape then
-						if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) and bot.FollowerEnt.TargetEnemy:Alive() then
+						if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then
 							local mtr = util.TraceLine( {
 								start = bot:EyePos(),
 								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
@@ -1497,7 +1500,7 @@ function botDeath( ply )
 	if ply:Team() != TEAM_UNDEAD and ply:GetZombieClassTable().Name == "Fresh Dead" then return end
 	
 	timer.Simple(3, function()
-		if !IsValid(ply) or ply:Alive() then return end
+		if !IsValid(ply) or ply:Alive() or GAMEMODE.RoundEnded then return end
 		
 		if GAMEMODE:GetWaveActive() then
 			ply:RefreshDynamicSpawnPoint()

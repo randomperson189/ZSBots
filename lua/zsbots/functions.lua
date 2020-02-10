@@ -618,7 +618,7 @@ function FindNearestEnemy( className, thisEnt )
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
     	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
-        if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:GetZombieClassTable().Name != "Crow" ) then
+        if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" ) then
         
             nearestEnt = entity
             range = distance
@@ -630,7 +630,7 @@ end
 
 function AnEnemyIsInSight(className, thisEnt)
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
-		if ( entity != thisEnt and entity:Team() != thisEnt:Team() and entity:GetZombieClassTable().Name != "Crow" ) then
+		if ( entity != thisEnt and entity:Team() != thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" ) then
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
 				endpos = entity:EyePos(),
@@ -662,7 +662,7 @@ function FindNearestEnemyInSight( className, thisEnt )
 			filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 		} )
 		
-        if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:GetZombieClassTable().Name != "Crow" and !tr.Hit ) then
+        if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" and !tr.Hit ) then
         
             nearestEnt = entity
             range = distance
@@ -696,7 +696,7 @@ function FindNearestTeammate( className, thisEnt )
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
     	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
-        if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() ) then
+        if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" ) then
         
             nearestEnt = entity
             range = distance
@@ -713,7 +713,7 @@ function FindNearestHealTarget( className, thisEnt )
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
     	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
-        if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() and entity:Health() <= (3 / 4 * entity:GetMaxHealth()) ) then
+        if ( distance <= range and entity != thisEnt and entity:Team() == thisEnt:Team() and entity:Alive() and entity:Health() <= (3 / 4 * entity:GetMaxHealth()) ) then
         
             nearestEnt = entity
             range = distance
@@ -730,7 +730,7 @@ function FindNearestPlayerTeammate( className, thisEnt )
     
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
     	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
-        if ( distance <= range and entity != thisEnt and !entity:IsBot() and entity:Team() == thisEnt:Team() ) then
+        if ( distance <= range and entity != thisEnt and !entity:IsBot() and entity:Alive() and entity:Team() == thisEnt:Team() ) then
         
             nearestEnt = entity
             range = distance
@@ -1411,7 +1411,7 @@ function plymeta:RerollBotClass ()
 end
 
 function plymeta:RunAwayCheck( cmd )
-	if IsValid (self.FollowerEnt.TargetEnemy) and self.FollowerEnt.TargetEnemy:Alive() then
+	if IsValid (self.FollowerEnt.TargetEnemy) then
 		self.b = true
 		
 		if self.runAwayTimer <= 0 then
