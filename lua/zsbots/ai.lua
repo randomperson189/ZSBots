@@ -608,6 +608,12 @@ function controlBots ( bot, cmd )
 					else
 						mr = 65
 					end
+					
+					if bot:GetActiveWeapon().MeleeRange != nil then
+						mr = bot:GetActiveWeapon().MeleeRange
+					else
+						mr = 65
+					end
 				else
 					mr = 65
 				end
@@ -773,6 +779,10 @@ function controlBots ( bot, cmd )
 		elseif bot:GetZombieClassTable().Name != "Crow" then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
+			if GAMEMODE:GetWaveActive() or myTarget == nil or ROUNDWINNER == bot:Team() then
+				bot.Task = GOTO_HUMANS
+			end
+			
 			if IsValid( bot.FollowerEnt.TargetEnemy ) then 
 				local tr = util.TraceLine( {
 					start = bot:EyePos(),
@@ -783,10 +793,6 @@ function controlBots ( bot, cmd )
 				if !tr.Hit then
 					bot.Task = GOTO_HUMANS
 				end
-			end
-			
-			if GAMEMODE:GetWaveActive() or myTarget == nil or ROUNDWINNER == bot:Team() then
-				bot.Task = GOTO_HUMANS
 			end
 			
 			if myTarget != nil then
@@ -845,21 +851,23 @@ function controlBots ( bot, cmd )
 						bot.Task = GOTO_ARSENAL
 					end]]
 					
+					local atr = util.TraceLine( {
+						start = bot:EyePos(),
+						endpos = myTarget:LocalToWorld(myTarget:OBBCenter()),
+						filter = function( ent ) if ( ent:IsWorld() ) then return true end end
+					} )
+					
 					if bot:GetMoveType() == MOVETYPE_LADDER then
 					
 						bot:DoLadderMovement( cmd, curgoal )
 				
 					else
-						
+						bot:SetLookAt(myTarget:EyePos())
 							
-						if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 45 ) then
-							
-							bot:SetLookAt(myTarget:EyePos())
+						if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 45 ) or atr.Hit or bot:GetBarricadeGhosting() then
 							CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
-						else
+						elseif !atr.Hit and !bot:GetBarricadeGhosting() then
 							bot.moveType = -1
-						
-							bot:SetLookAt(myTarget:EyePos())
 						
 							bot.attackTimer = true
 						end
@@ -900,7 +908,7 @@ function controlBots ( bot, cmd )
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
-			if IsValid (bot.FollowerEnt.TargetArsenal) then
+			if IsValid (bot.FollowerEnt.TargetArsenal) and ROUNDWINNER != bot:Team() then
 				if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) or GAMEMODE:GetWaveActive() or GAMEMODE:GetWaveStart() - 15 <= CurTime() or GAMEMODE:GetWave() == 0 then
 					bot.newPointTimer = 15
 					bot.Task = GOTO_ARSENAL
@@ -1013,10 +1021,16 @@ function controlBots ( bot, cmd )
 					else
 						mr = 65
 					end
+					
+					if bot:GetActiveWeapon().MeleeRange != nil then
+						mr = bot:GetActiveWeapon().MeleeRange
+					else
+						mr = 65
+					end
 				else
 					mr = 65
 				end
-				
+				print (mr)
 				mr = mr - 10
 				
 				if mr < 0 then mr = 0 end
