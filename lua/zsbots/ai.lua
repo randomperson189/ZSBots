@@ -1030,7 +1030,7 @@ function controlBots ( bot, cmd )
 				else
 					mr = 65
 				end
-				print (mr)
+				
 				mr = mr - 10
 				
 				if mr < 0 then mr = 0 end
