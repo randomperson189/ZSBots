@@ -1,5 +1,5 @@
 # ZSBots
-Created by Random Person: https://steamcommunity.com/id/684573485734857348573457938/
+Created by RandomPerson189: https://steamcommunity.com/id/684573485734857348573457938/
 
 These are Bots I'm making for the Garry's Mod Zombie Survival gamemode. They're still in development so expect bugs, unfinished features and frequent updates. If you find a bug, be sure to report it in the Issues section.
 
