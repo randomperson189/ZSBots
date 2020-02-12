@@ -5,7 +5,7 @@ These are Bots I'm making for the Garry's Mod Zombie Survival gamemode. They're 
 
 **If the bots aren't moving then type 'nav_generate' into the console.**
 
-**How to install**
+# How to install
 Unzip the downloaded file and then put the folder into your "garrysmod/addons" folder
 
 **ULX commands:**
