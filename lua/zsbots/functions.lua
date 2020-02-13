@@ -73,6 +73,11 @@ function vecmeta:QuickDistanceCheck(otherVector, checkType, dist)
 	return nil
 end
 
+function plymeta:SetTask(task)
+	self.Task = task
+	self.FollowerEnt:NavCheck()
+end
+
 function plymeta:SetLookAt(position)
 	self.lookAngle = (position - self:EyePos()):Angle()
 end
@@ -221,7 +226,7 @@ function plymeta:InputTimers()
 					timer.Simple (0.5, function()
 						if !IsValid (self) then return end
 						self.attackHold = false
-						self.Task = GOTO_ARSENAL
+						self:SetTask( GOTO_ARSENAL )
 						self.deployTimer = false --comment this out if things no work properly
 						self.canDeployTimer = true
 					end)
@@ -590,7 +595,7 @@ function CountNearbyFriends( bot, radius )
 	local tbl = {  }
 	
 	for i, friend in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
-		if friend:IsPlayer() and friend:Team() == bot:Team() and friend != bot then
+		if friend:IsPlayer() and friend:Team() == bot:Team() and friend:Alive() and friend != bot then
 			table.insert(tbl, friend)
 		end
 	end
@@ -602,7 +607,7 @@ function CountNearbyEnemies( bot, radius )
 	local tbl = {  }
 	
 	for i, enemy in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
-		if enemy:IsPlayer() and enemy:Team() != bot:Team() and enemy != bot then
+		if enemy:IsPlayer() and enemy:Team() != bot:Team() and enemy:Alive() and enemy != bot then
 			table.insert(tbl, enemy)
 		end
 	end
@@ -1654,7 +1659,7 @@ function plymeta:DoSpawnStuff( changeClass )
 	--RESET SOME VALUES ORELSE BAD THINGS HAPPEN
 	if GAMEMODE.ZombieEscape then self.lookDistance = defaultEscapeLookDistance else self.lookDistance = defaultLookDistance end
 	
-	self.Task = 0
+	self:SetTask( 0 )
 	self.Disposition = IGNORE_ENEMIES
 	self.moveType = -1
 	self.newPointTimer = 15
@@ -1668,11 +1673,11 @@ function plymeta:DoSpawnStuff( changeClass )
 		end)
 		
 		if GAMEMODE.ZombieEscape then
-			self.Task = FOLLOW
+			self:SetTask( FOLLOW )
 			self.Disposition = ENGAGE_AND_INVESTIGATE
 		else
 			if GAMEMODE:GetWave() != 0 then
-				self.Task = GOTO_ARSENAL
+				self:SetTask( GOTO_ARSENAL )
 				self.Disposition = ENGAGE_AND_INVESTIGATE
 				
 				timer.Simple( 4, function() 
@@ -1689,10 +1694,10 @@ function plymeta:DoSpawnStuff( changeClass )
 					timer.Simple(delay, function() 
 						if !IsValid(self) then return end
 						if game.IsObj() then
-							self.Task = FOLLOW
+							self:SetTask( FOLLOW )
 							self.Disposition = ENGAGE_AND_INVESTIGATE
 						else
-							self.Task = GOTO_ARSENAL
+							self:SetTask( GOTO_ARSENAL )
 							self.Disposition = ENGAGE_AND_INVESTIGATE
 						end
 						self:GiveRandomPresetLoadout()
@@ -1701,7 +1706,7 @@ function plymeta:DoSpawnStuff( changeClass )
 			end
 		end
 	else
-		self.Task = GOTO_HUMANS
+		self:SetTask( GOTO_HUMANS )
 		
 		if changeClass and !game.IsObj() and !GAMEMODE.ZombieEscape then
 			self:RerollBotClass()

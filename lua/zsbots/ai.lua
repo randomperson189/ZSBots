@@ -358,7 +358,7 @@ function controlBots ( bot, cmd )
 		local medCooldown = medWeapon:GetNextCharge() - CurTime()
 		
 		if --[[bot.FollowerEnt.TargetTeammate:Health() <= (3 / 4 * bot.FollowerEnt.TargetTeammate:GetMaxHealth()) and]] bot:Health() > (2 / 4 * bot:GetMaxHealth()) and medCooldown <= 0 and medWeapon:GetPrimaryAmmoCount() > 0 then
-			bot.Task = HEAL_TEAMMATE
+			bot:SetTask( HEAL_TEAMMATE )
 		end
 	end
 		
@@ -368,8 +368,8 @@ function controlBots ( bot, cmd )
 	
 	if bot.Task == 1 then
 		if bot:Team() != TEAM_UNDEAD then
-			if game.IsObj() or GAMEMODE.ZombieEscape then bot.Task = FOLLOW end
-			if ROUNDWINNER == bot:Team() then bot.Task = WANDER_AROUND end
+			if game.IsObj() or GAMEMODE.ZombieEscape then bot:SetTask( FOLLOW ) end
+			if ROUNDWINNER == bot:Team() then bot:SetTask( WANDER_AROUND ) end
 			
 			if !game.IsObj() and !GAMEMODE.ZombieEscape and ROUNDWINNER != bot:Team() then
 				local myTarget = bot.FollowerEnt.TargetArsenal
@@ -384,7 +384,7 @@ function controlBots ( bot, cmd )
 						} )
 						
 						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
-							bot.Task = MELEE_ZOMBIE
+							bot:SetTask( MELEE_ZOMBIE )
 						end
 					end
 				end
@@ -401,11 +401,11 @@ function controlBots ( bot, cmd )
 					
 					--if IsValid (bot.FollowerEnt.TargetEnemy) then
 						if !lootTrace.Hit then
-							bot.Task = PICKUP_LOOT
+							bot:SetTask( PICKUP_LOOT )
 						end
 					--[[else
 						if !tr.Hit then
-							bot.Task = PICKUP_LOOT
+							bot:SetTask( PICKUP_LOOT )
 						end
 					end]]
 				end
@@ -448,20 +448,21 @@ function controlBots ( bot, cmd )
 								if bot.guardTimer <= 0 then
 									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
 									bot.guardTimer = math.random( 5, 10 )
+									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
 									
-									bot.Task = DEFEND_CADE
+									bot:SetTask( DEFEND_CADE )
 								end
 							end
 						end
 						if bot:HasWeapon("weapon_zs_resupplybox") then
-							bot.Task = PLACE_RESUPPLY
+							bot:SetTask( PLACE_RESUPPLY )
 						end
 						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
 							curWep = bot:GetActiveWeapon()
 							
 							if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep.Base != "weapon_zs_basemelee" then
 								if bot:GetOtherWeaponWithAmmo() == nil then
-									bot.Task = RESUPPLY_AMMO
+									bot:SetTask( RESUPPLY_AMMO )
 								end
 							end
 							
@@ -470,7 +471,7 @@ function controlBots ( bot, cmd )
 									for i, wep in ipairs(bot:GetWeapons()) do
 										if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep.Base != "weapon_zs_basemelee" then
 											bot:SelectWeapon(wep)
-											bot.Task = RESUPPLY_AMMO
+											bot:SetTask( RESUPPLY_AMMO )
 											break
 										end
 									end
@@ -481,13 +482,13 @@ function controlBots ( bot, cmd )
 						if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 and IsValid(bot.FollowerEnt.TargetArsenal) then
 							if IsValid (bot.FollowerEnt.TargetCadingProp) and bot.BuffMuscular and bot.FollowerEnt.TargetArsenal.CadingSpots[1] != nil then
 								if bot:HasWeapon("weapon_zs_hammer") then
-									bot.Task = PICKUP_CADING_PROP
+									bot:SetTask( PICKUP_CADING_PROP )
 								end	
 							end
 						end
 						if IsValid (bot.FollowerEnt.TargetNailedProp) and !bot.BuffMuscular then
 							if bot:HasWeapon("weapon_zs_hammer") and bot:Health() > (1.5 / 4 * bot:GetMaxHealth()) then
-								bot.Task = REPAIR_CADE
+								bot:SetTask( REPAIR_CADE )
 							end	
 						end
 						
@@ -504,7 +505,7 @@ function controlBots ( bot, cmd )
 						
 						if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveStart() - 15 > CurTime() and bot.shouldGoOutside then
 							bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
-							bot.Task = WANDER_AROUND
+							bot:SetTask( WANDER_AROUND )
 						end
 					end
 					
@@ -514,7 +515,7 @@ function controlBots ( bot, cmd )
 					
 				else--if GAMEMODE:GetWave() != 0 then
 					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
-					bot.Task = WANDER_AROUND
+					bot:SetTask( WANDER_AROUND )
 				end
 			end
 			
@@ -531,7 +532,7 @@ function controlBots ( bot, cmd )
 				
 				if !GAMEMODE:GetWaveActive() then
 					if tr.Hit and bot.FollowerEnt.TargetPosition != nil and ROUNDWINNER != bot:Team() then
-						bot.Task = HIDE_FROM_HUMANS
+						bot:SetTask( HIDE_FROM_HUMANS )
 					end
 				end
 				
@@ -773,14 +774,14 @@ function controlBots ( bot, cmd )
 			
 			if bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or !bot:GetActiveWeapon().IsMelee or bot:GetActiveWeapon():GetClass() == "weapon_zs_hammer" or !IsValid (myTarget) or myTarget:Health() <= 0 then
 				bot.crouchHold = false
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 		
 		elseif bot:GetZombieClassTable().Name != "Crow" then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
 			if GAMEMODE:GetWaveActive() or myTarget == nil or ROUNDWINNER == bot:Team() then
-				bot.Task = GOTO_HUMANS
+				bot:SetTask( GOTO_HUMANS )
 			end
 			
 			if IsValid( bot.FollowerEnt.TargetEnemy ) then 
@@ -791,7 +792,7 @@ function controlBots ( bot, cmd )
 				} )
 				
 				if !tr.Hit then
-					bot.Task = GOTO_HUMANS
+					bot:SetTask( GOTO_HUMANS )
 				end
 			end
 			
@@ -839,7 +840,7 @@ function controlBots ( bot, cmd )
 						cmd:SelectWeapon (bot.lastWeapon)
 					end
 			
-					bot.Task = GOTO_ARSENAL
+					bot:SetTask( GOTO_ARSENAL )
 				end
 				
 				if IsValid (myTarget) then
@@ -848,7 +849,7 @@ function controlBots ( bot, cmd )
 							cmd:SelectWeapon (bot.lastWeapon)
 						end
 					
-						bot.Task = GOTO_ARSENAL
+						bot:SetTask( GOTO_ARSENAL )
 					end]]
 					
 					local atr = util.TraceLine( {
@@ -880,7 +881,7 @@ function controlBots ( bot, cmd )
 					cmd:SelectWeapon (bot.lastWeapon)
 				end
 			
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 		else
 			--Put Shade AI here
@@ -911,7 +912,7 @@ function controlBots ( bot, cmd )
 			if IsValid (bot.FollowerEnt.TargetArsenal) and ROUNDWINNER != bot:Team() then
 				if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) or GAMEMODE:GetWaveActive() or GAMEMODE:GetWaveStart() - 15 <= CurTime() or GAMEMODE:GetWave() == 0 then
 					bot.newPointTimer = 15
-					bot.Task = GOTO_ARSENAL
+					bot:SetTask( GOTO_ARSENAL )
 				end
 			end
 			
@@ -945,13 +946,13 @@ function controlBots ( bot, cmd )
 					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 					
 					if !lootTrace.Hit then
-						bot.Task = PICKUP_LOOT
+						bot:SetTask( PICKUP_LOOT )
 					end
 				end
 				
 				if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):QuickDistanceCheck( Vector( myTarget.x, myTarget.y, 0 ), SMALLER, 20 ) or bot.newPointTimer <= 0 then
 					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
-					bot.FollowerEnt:ComputePath (bot.FollowerEnt.P, bot.FollowerEnt.TargetPosition)
+					bot.FollowerEnt:NavCheck()
 					
 					if bot.newPointTimer <= 0 and GetConVar( "zs_bot_debug" ):GetInt() != 0 then 
 						print(bot:Name() .. " took too long to get to wander point, going to new one.") 
@@ -971,7 +972,7 @@ function controlBots ( bot, cmd )
 					
 					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then					
 						if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
-							bot.Task = MELEE_ZOMBIE
+							bot:SetTask( MELEE_ZOMBIE )
 						end
 					end
 				end
@@ -998,7 +999,7 @@ function controlBots ( bot, cmd )
 				end
 				bot.lookPos = nil
 				bot.lookProp = nil
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 					
 			if IsValid(myTarget) then
@@ -1090,7 +1091,7 @@ function controlBots ( bot, cmd )
 				end
 				bot.lookPos = nil
 				bot.lookProp = nil
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1134,11 +1135,11 @@ function controlBots ( bot, cmd )
 				if myTarget:GetHolder() == bot then
 					bot.heldProp = myTarget
 					bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-					bot.Task = MAKE_CADE
+					bot:SetTask( MAKE_CADE )
 				end
 			else
 				bot.useTimer = false
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1152,7 +1153,7 @@ function controlBots ( bot, cmd )
 			
 			if !IsValid(bot.heldProp) then
 				bot.sprintHold = false
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 			
 			if myTarget != nil then
@@ -1199,7 +1200,7 @@ function controlBots ( bot, cmd )
 					bot.attack2Timer = true
 					--bot:SetLookAt(myTarget)
 					bot.lookAngle = Angle(bot.lookAngle.x + 0.5, (myTarget - bot:EyePos()):Angle().y, bot.lookAngle.z)
-					--bot.Task = GOTO_ARSENAL
+					--bot:SetTask( GOTO_ARSENAL )
 					if bot.lookAngle.x >= 89 then 
 						if IsValid (bot.lastWeapon) then
 							cmd:SelectWeapon (bot.lastWeapon)
@@ -1207,7 +1208,7 @@ function controlBots ( bot, cmd )
 						--bot.heldProp = nil
 						
 						bot.sprintHold = false
-						bot.Task = GOTO_ARSENAL 
+						bot:SetTask( GOTO_ARSENAL ) 
 					end
 					
 					if bot.heldProp:IsNailed() then
@@ -1217,7 +1218,7 @@ function controlBots ( bot, cmd )
 						--bot.heldProp = nil
 						
 						bot.sprintHold = false
-						bot.Task = GOTO_ARSENAL
+						bot:SetTask( GOTO_ARSENAL )
 					end
 				end
 			else
@@ -1226,7 +1227,7 @@ function controlBots ( bot, cmd )
 				end
 				
 				bot.sprintHold = false
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1256,11 +1257,11 @@ function controlBots ( bot, cmd )
 						
 						bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 						bot.useTimer = true
-						bot.Task = GOTO_ARSENAL
+						bot:SetTask( GOTO_ARSENAL )
 					end
 				end
 			else
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 			
 			bot:CheckPropPhasing()
@@ -1278,7 +1279,7 @@ function controlBots ( bot, cmd )
 			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 then
 				bot.moveType = -1
 				bot.crouchHold = false
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 			
 			if IsValid(myTarget) then
@@ -1315,7 +1316,7 @@ function controlBots ( bot, cmd )
 			else
 				bot.moveType = -1
 				bot.crouchHold = false
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 			
 			bot:CheckPropPhasing()
@@ -1338,11 +1339,12 @@ function controlBots ( bot, cmd )
 					
 					if bot.guardTimer <= 0 then
 						if math.random(0, 1) == 0 then
-							bot.Task = GOTO_ARSENAL
+							bot:SetTask( GOTO_ARSENAL )
 							
 							bot.guardTimer = math.random( 5, 10 )
 						else
 							bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+							bot.FollowerEnt:NavCheck()
 							
 							bot.guardTimer = math.random( 5, 10 )					
 						end
@@ -1354,8 +1356,6 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )
 						
 					else
-						
-						
 						if bot:GetPos():QuickDistanceCheck( myTarget, BIGGER, 125 ) then
 							bot:LookatPosXY( cmd, myTarget )
 							CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)					
@@ -1368,10 +1368,10 @@ function controlBots ( bot, cmd )
 			
 			if IsValid (bot.FollowerEnt.TargetArsenal) then
 				if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
-					bot.Task = GOTO_ARSENAL
+					bot:SetTask( GOTO_ARSENAL )
 				end
 			else
-				bot.Task = GOTO_ARSENAL
+				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1433,7 +1433,7 @@ function controlBots ( bot, cmd )
 							} )
 							
 							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
-								bot.Task = MELEE_ZOMBIES
+								bot:SetTask( MELEE_ZOMBIES )
 							end
 						end
 					end
@@ -1449,7 +1449,7 @@ function controlBots ( bot, cmd )
 						debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 								
 						if !lootTrace.Hit then
-							bot.Task = PICKUP_LOOT
+							bot:SetTask( PICKUP_LOOT )
 						end
 					end
 					
