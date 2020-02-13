@@ -75,7 +75,8 @@ end
 
 function plymeta:SetTask(task)
 	self.Task = task
-	self.FollowerEnt:NavCheck()
+	
+	if IsValid(self.FollowerEnt) then self.FollowerEnt:NavCheck() end
 end
 
 function plymeta:SetLookAt(position)
@@ -1413,6 +1414,29 @@ function plymeta:RerollBotClass ()
 		return
 	end
 	self:SetZombieClass(class.Index)
+end
+
+function plymeta:LootCheck()
+	if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 and IsValid( self.FollowerEnt.TargetLootItem ) and !IsValid( self.FollowerEnt.TargetEnemy ) then
+		local lootTrace = util.TraceLine( {
+			start = self:EyePos(),
+			endpos = self.FollowerEnt.TargetLootItem:LocalToWorld(self.FollowerEnt.TargetLootItem:OBBCenter()),
+			mask = MASK_SHOT,
+			filter = function( ent ) if ( ent != self.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
+		} )
+		
+		debugoverlay.Line( self:EyePos(), self.FollowerEnt.TargetLootItem:LocalToWorld(self.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+		
+		--if IsValid (self.FollowerEnt.TargetEnemy) then
+			if !lootTrace.Hit then
+				self:SetTask( PICKUP_LOOT )
+			end
+		--[[else
+			if !tr.Hit then
+				self:SetTask( PICKUP_LOOT )
+			end
+		end]]
+	end
 end
 
 function plymeta:RunAwayCheck( cmd )

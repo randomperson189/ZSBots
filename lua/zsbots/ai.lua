@@ -389,26 +389,7 @@ function controlBots ( bot, cmd )
 					end
 				end
 				
-				if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-					local lootTrace = util.TraceLine( {
-						start = bot:EyePos(),
-						endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
-						mask = MASK_SHOT,
-						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
-					} )
-					
-					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
-					
-					--if IsValid (bot.FollowerEnt.TargetEnemy) then
-						if !lootTrace.Hit then
-							bot:SetTask( PICKUP_LOOT )
-						end
-					--[[else
-						if !tr.Hit then
-							bot:SetTask( PICKUP_LOOT )
-						end
-					end]]
-				end
+				bot:LootCheck()
 			
 				if IsValid (myTarget) then
 					local atr = util.TraceLine( {
@@ -441,7 +422,7 @@ function controlBots ( bot, cmd )
 						
 						if IsValid( bot:GetActiveWeapon() ) then
 							--print (bot.FollowerEnt.TargetCadingSpot)
-							if !bot:GetActiveWeapon().IsMelee then
+							if !bot:GetActiveWeapon().IsMelee and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
 								bot.guardTimer = bot.guardTimer - FrameTime()
 								--print (bot.guardTimer)
 						
@@ -935,20 +916,7 @@ function controlBots ( bot, cmd )
 					end
 				end
 				
-				if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-					local lootTrace = util.TraceLine( {
-						start = bot:EyePos(),
-						endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
-						mask = MASK_SHOT,
-						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
-					} )
-					
-					debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
-					
-					if !lootTrace.Hit then
-						bot:SetTask( PICKUP_LOOT )
-					end
-				end
+				bot:LootCheck()
 				
 				if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):QuickDistanceCheck( Vector( myTarget.x, myTarget.y, 0 ), SMALLER, 20 ) or bot.newPointTimer <= 0 then
 					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
@@ -1276,7 +1244,7 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetLootItem
 			bot.Disposition = SELF_DEFENSE
 			
-			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 then
+			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 or IsValid(bot.FollowerEnt.TargetEnemy) then
 				bot.moveType = -1
 				bot.crouchHold = false
 				bot:SetTask( GOTO_ARSENAL )
@@ -1438,20 +1406,7 @@ function controlBots ( bot, cmd )
 						end
 					end
 					
-					if IsValid (bot.FollowerEnt.TargetLootItem) and GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 then
-						local lootTrace = util.TraceLine( {
-							start = bot:EyePos(),
-							endpos = bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()),
-							mask = MASK_SHOT,
-							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
-						} )
-						
-						debugoverlay.Line( bot:EyePos(), bot.FollowerEnt.TargetLootItem:LocalToWorld(bot.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
-								
-						if !lootTrace.Hit then
-							bot:SetTask( PICKUP_LOOT )
-						end
-					end
+					bot:LootCheck()
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 200 ) or atr.Hit or bot:GetBarricadeGhosting() then
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
