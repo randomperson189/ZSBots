@@ -591,25 +591,44 @@ function player.GetZSBots()
 	return zsbots
 end
 
-function CountNearbyFriends( bot, radius )
-	--debugoverlay.Sphere( bot:EyePos(), radius, 0.5, Color( 255, 255, 255, 0 ), true )
+function CountNearbyFriends( thisEnt, radius )
 	local tbl = {  }
 	
-	for i, friend in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
-		if friend:IsPlayer() and friend:Team() == bot:Team() and friend:Alive() and friend != bot then
-			table.insert(tbl, friend)
+	for i, friend in ipairs( ents.FindInSphere(thisEnt:EyePos(), radius) ) do
+		if friend:IsPlayer() and friend:Team() == thisEnt:Team() and friend:Alive() and friend != thisEnt then
+			
+			local tr = util.TraceLine( {
+				start = thisEnt:EyePos(),
+				endpos = thisEnt:AimPoint( friend ),
+				mask = MASK_SHOT,
+				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+			} )
+			
+			if !tr.Hit then
+				table.insert(tbl, friend)
+			end
 		end
 	end
 	
 	return #tbl
 end
 
-function CountNearbyEnemies( bot, radius )
+function CountNearbyEnemies( thisEnt, radius )
 	local tbl = {  }
 	
-	for i, enemy in ipairs( ents.FindInSphere(bot:EyePos(), radius) ) do
-		if enemy:IsPlayer() and enemy:Team() != bot:Team() and enemy:Alive() and enemy != bot then
-			table.insert(tbl, enemy)
+	for i, enemy in ipairs( ents.FindInSphere(thisEnt:EyePos(), radius) ) do
+		if enemy:IsPlayer() and enemy:Team() != thisEnt:Team() and enemy:Alive() and enemy != thisEnt then
+			
+			local tr = util.TraceLine( {
+				start = thisEnt:EyePos(),
+				endpos = thisEnt:AimPoint( enemy ),
+				mask = MASK_SHOT,
+				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+			} )
+			
+			if !tr.Hit then
+				table.insert(tbl, enemy)
+			end
 		end
 	end
 	
@@ -637,9 +656,10 @@ end
 function AnEnemyIsInSight(className, thisEnt)
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
 		if ( entity != thisEnt and entity:Team() != thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" ) then
+			
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
-				endpos = entity:EyePos(),
+				endpos = thisEnt:AimPoint(entity),
 				mask = MASK_SHOT,
 				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 			} )
@@ -661,18 +681,19 @@ function FindNearestEnemyInSight( className, thisEnt )
     for i, entity in ipairs( ents.FindByClass( className ) ) do 
     	local distance = thisEnt:GetPos():DistToSqr( entity:GetPos() )
 		
-		local tr = util.TraceLine( {
-			start = thisEnt:EyePos(),
-			endpos = entity:EyePos(),
-			mask = MASK_SHOT,
-			filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-		} )
-		
-        if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" and !tr.Hit ) then
-        
-            nearestEnt = entity
-            range = distance
-            
+        if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" ) then
+			
+			local tr = util.TraceLine( {
+				start = thisEnt:EyePos(),
+				endpos = thisEnt:AimPoint(entity),
+				mask = MASK_SHOT,
+				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+			} )
+			
+			if !tr.Hit  then
+				nearestEnt = entity
+				range = distance
+            end
         end 
     end 
     return nearestEnt
@@ -1530,7 +1551,7 @@ function plymeta:AimPoint( target )
 				center = LocalToWorld( center, Angle(0, 0, 0), pos, rot )
 				--print ("Mins is ", mins, "Maxs is ", maxs)
 				
-				debugoverlay.Sphere( center, 3, 0, Color( 255, 255, 255, 0 ), true )
+				--debugoverlay.Sphere( center, 3, 0, Color( 255, 255, 255, 0 ), true )
 				
 				return center
 			end

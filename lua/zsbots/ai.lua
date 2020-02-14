@@ -42,9 +42,9 @@ function controlBots ( bot, cmd )
 				debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. bot.FollowerEnt.TargetEnemy:Name(), 0, Color(255, 0, 0))
 			end
 			
-			debugoverlay.ScreenText( 0.55, 0.54, "Steady view: " .. "N/A", 0, Color(255, 255, 0))
-			debugoverlay.ScreenText( 0.55, 0.56, "Nearby friends: " .. bot.nearbyFriends, 0, Color(102, 254, 100))
-			debugoverlay.ScreenText( 0.55, 0.58, "Nearby enemies: " .. bot.nearbyEnemies, 0, Color(254, 100, 100))
+			debugoverlay.ScreenText( 0.55, 0.54, "Steady view = " .. "N/A", 0, Color(255, 255, 0))
+			debugoverlay.ScreenText( 0.55, 0.56, "Nearby friends = " .. bot.nearbyFriends, 0, Color(102, 254, 100))
+			debugoverlay.ScreenText( 0.55, 0.58, "Nearby enemies = " .. bot.nearbyEnemies, 0, Color(254, 100, 100))
 			debugoverlay.ScreenText( 0.55, 0.6, "Nav Area: " .. tostring(navmesh.GetNavArea( bot:EyePos(), math.huge )), 0, Color(255, 255, 255))
 		end
 	end
@@ -209,8 +209,8 @@ function controlBots ( bot, cmd )
 	end
 	
 	if CurTime() > bot.targetFindDelay then
-		bot.nearbyFriends = CountNearbyFriends( bot, 300 )
-		bot.nearbyEnemies = CountNearbyEnemies( bot, 300 )
+		bot.nearbyFriends = CountNearbyFriends( bot, 3000 )
+		bot.nearbyEnemies = CountNearbyEnemies( bot, 3000 )
 		
 		if bot:Team() == TEAM_UNDEAD then
 			--bot.attackProp = FindNearestProp2( bot )
