@@ -2,17 +2,18 @@
 GOTO_ARSENAL = 1
 MELEE_ZOMBIE = 2
 HEAL_TEAMMATE = 3
-PLACE_RESUPPLY = 4
-WANDER_AROUND = 5
-REPAIR_CADE = 6
-PICKUP_CADING_PROP = 7
-MAKE_CADE = 8
-RESUPPLY_AMMO = 9
-PICKUP_LOOT = 10
-DEFEND_CADE = 11
-SNIPING = 12
-FOLLOW = 13
-SPAWNKILL_ZOMBIES = 14
+PLACE_DEPLOYABLE = 4
+PACK_DEPLOYABLE = 5
+RESUPPLY_AMMO = 6
+WANDER_AROUND = 7
+REPAIR_CADE = 8
+PICKUP_CADING_PROP = 9
+MAKE_CADE = 10
+PICKUP_LOOT = 11
+DEFEND_CADE = 12
+SNIPING = 13
+FOLLOW = 14
+SPAWNKILL_ZOMBIES = 15
 
 -- ZOMBIE TASKS
 GOTO_HUMANS = 1
@@ -222,11 +223,9 @@ function plymeta:InputTimers()
 				self.crouchHold = false
 				timer.Simple (0, function()
 					if !IsValid (self) then return end
-					self.attackHold = true
 					self.lookAngle = Angle (0, self:EyeAngles().y, self:EyeAngles().z)
 					timer.Simple (0.5, function()
 						if !IsValid (self) then return end
-						self.attackHold = false
 						self:SetTask( GOTO_ARSENAL )
 						self.deployTimer = false --comment this out if things no work properly
 						self.canDeployTimer = true
@@ -1197,9 +1196,11 @@ function player.CreateZSBot( name )
 		--ply.rotationTimer = 0
 		
 		--BOT NAVIGATOR
-		ply.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
-		ply.FollowerEnt:Spawn()
-		ply.FollowerEnt.Bot = ply
+		if !IsValid(ply.FollowerEnt) then
+			ply.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
+			ply.FollowerEnt:Spawn()
+			ply.FollowerEnt.Bot = ply
+		end
 		
 		--OTHER STUFF
 		ply.LastPath = nil
@@ -1207,7 +1208,6 @@ function player.CreateZSBot( name )
 		ply.lookProp = nil
 		ply.lookPos = nil
 		ply.lookDistance = 1000
-		ply.lastWeapon = nil
 		ply.heldProp = nil
 		ply.cJumpDelay = 0
 		ply.strafeType = -1 --0 = left, 1 = right, 2 = back
@@ -1570,12 +1570,13 @@ function plymeta:GetTaskName()
 	"GOTO_ARSENAL",
 	"MELEE_ZOMBIE",
 	"HEAL_TEAMMATE", 
-	"PLACE_RESUPPLY", 
+	"PLACE_DEPLOYABLE",
+	"PACK_DEPLOYABLE",
+	"RESUPPLY_AMMO",
 	"WANDER_AROUND", 
 	"REPAIR_CADE", 
-	"GOTO_CADING_PROP", 
+	"PICKUP_CADING_PROP", 
 	"MAKE_CADE", 
-	"RESUPPLY_AMMO", 
 	"PICKUP_LOOT", 
 	"DEFEND_CADE", 
 	"SNIPING", 
@@ -1727,7 +1728,7 @@ function plymeta:DoSpawnStuff( changeClass )
 				
 				timer.Simple( 4, function() 
 					if !IsValid(self) then return end
-					self:GiveRandomPresetLoadout()
+					gamemode.Call("GiveRandomEquipment", self)
 				end)
 			else
 				timer.Simple(0, function() 
@@ -1740,12 +1741,11 @@ function plymeta:DoSpawnStuff( changeClass )
 						if !IsValid(self) then return end
 						if game.IsObj() then
 							self:SetTask( FOLLOW )
-							self.Disposition = ENGAGE_AND_INVESTIGATE
 						else
 							self:SetTask( GOTO_ARSENAL )
-							self.Disposition = ENGAGE_AND_INVESTIGATE
 						end
-						self:GiveRandomPresetLoadout()
+						self.Disposition = ENGAGE_AND_INVESTIGATE
+						gamemode.Call("GiveRandomEquipment", self)
 					end)
 				end)
 			end
@@ -1756,30 +1756,5 @@ function plymeta:DoSpawnStuff( changeClass )
 		if changeClass and !game.IsObj() and !GAMEMODE.ZombieEscape then
 			self:RerollBotClass()
 		end
-	end
-end
-
-function plymeta:GiveRandomPresetLoadout()
-	if !IsValid( self ) then return end
-	
-	-- 12 default starting loadouts, the rest are custom
-	if math.random(1, 13) == 13 then
-		local oof = math.random(1, 2)
-		if oof == 1 then
-			if GAMEMODE.CheckedOut[self:UniqueID()] or GAMEMODE.ZombieEscape then return end
-			GAMEMODE.CheckedOut[self:UniqueID()] = true
-			
-			self:Give("weapon_zs_resupplybox")
-			self:Give("weapon_zs_swissarmyknife")
-		elseif oof == 2 then
-			if GAMEMODE.CheckedOut[self:UniqueID()] or GAMEMODE.ZombieEscape then return end
-			GAMEMODE.CheckedOut[self:UniqueID()] = true
-	
-			self:Give("weapon_zs_hammer")
-			self.BuffMuscular = true
-			self:DoMuscularBones()
-		end
-	else
-		gamemode.Call("GiveRandomEquipment", self)
 	end
 end

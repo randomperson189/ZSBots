@@ -10,6 +10,7 @@ CreateConVar( "zs_bot_muscular", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "
 CreateConVar( "zs_bot_infinite_ammo", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots will have unlimited ammo." )
 
 CreateConVar( "zs_bot_can_cade", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may cade." )
+CreateConVar( "zs_bot_can_buy", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may buy from arsenal crates." )
 CreateConVar( "zs_bot_can_place_deployables", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may place deployables." )
 CreateConVar( "zs_bot_can_pick_up_loot", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may pick up loot." )
 CreateConVar( "zs_bot_can_chat", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may send chat messages." )

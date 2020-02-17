@@ -96,12 +96,12 @@ function ENT:NavCheck()
 		self:ComputePath (self.P, self.TargetNailedProp:GetPos())
 	end
 
-	if IsValid( self.TargetCadingProp ) and self.Bot.Task == GOTO_CADING_PROP then
+	if IsValid( self.TargetCadingProp ) and self.Bot.Task == PICKUP_CADING_PROP then
 		self:ComputePath (self.P, self.TargetCadingProp:GetPos())
 	end
 
 	if self.TargetCadingSpot != nil then 
-		if self.Bot.Task == MAKE_CADE or self.Bot.Task == DEFEND_CADE then
+		if self.Bot.Task == MAKE_CADE or self.Bot.Task == DEFEND_CADE or self.Bot.Task == PLACE_DEPLOYABLE then
 			self:ComputePath (self.P, self.TargetCadingSpot)
 		end
 	end

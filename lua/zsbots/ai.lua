@@ -70,7 +70,7 @@ function controlBots ( bot, cmd )
 	]]
 	
 	-- Switch weapons if got no ammo
-	if bot.Task == 1 or bot.Task == 5 or bot.Task == 11 or bot.Task == 13 then
+	if bot.Task == GOTO_ARSENAL or bot.Task == WANDER_AROUND or bot.Task == DEFEND_CADE or bot.Task == FOLLOW then
 		if bot:Team() != TEAM_UNDEAD and CurTime() > bot.targetFindDelay and bot.runAwayTimer <= 0 then
 			
 			if IsValid(bot:GetActiveWeapon()) then
@@ -217,7 +217,7 @@ function controlBots ( bot, cmd )
 			bot.FollowerEnt.TargetPosition = FindNearestHidingSpot( bot )
 			
 			if ROUNDWINNER != bot:Team() then
-				if bot.Task == 2 then
+				if bot.Task == HIDE_FROM_HUMANS then
 					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
 				elseif AnEnemyIsInSight("player", bot) then
 					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
@@ -366,7 +366,7 @@ function controlBots ( bot, cmd )
 	--Humans: Go to arsenal
 	--Zombies: Go to humans
 	
-	if bot.Task == 1 then
+	if bot.Task == GOTO_ARSENAL then
 		if bot:Team() != TEAM_UNDEAD then
 			if game.IsObj() or GAMEMODE.ZombieEscape then bot:SetTask( FOLLOW ) end
 			if ROUNDWINNER == bot:Team() then bot:SetTask( WANDER_AROUND ) end
@@ -436,7 +436,27 @@ function controlBots ( bot, cmd )
 							end
 						end
 						if bot:HasWeapon("weapon_zs_resupplybox") then
-							bot:SetTask( PLACE_RESUPPLY )
+							bot:SelectWeapon(bot:GetWeapon("weapon_zs_resupplybox"))
+							bot:SetTask( PLACE_DEPLOYABLE )
+						elseif bot:HasWeapon("weapon_zs_messagebeacon") then
+							bot:SelectWeapon(bot:GetWeapon("weapon_zs_messagebeacon"))
+							bot:SetTask( PLACE_DEPLOYABLE )
+						elseif bot:HasWeapon("weapon_zs_gunturret") then
+							if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+								bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+								bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+								
+								bot:SelectWeapon(bot:GetWeapon("weapon_zs_gunturret"))
+								bot:SetTask( PLACE_DEPLOYABLE )
+							end
+						elseif bot:HasWeapon("weapon_zs_ffemitter") then
+							if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+								bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+								bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+								
+								bot:SelectWeapon(bot:GetWeapon("weapon_zs_ffemitter"))
+								bot:SetTask( PLACE_DEPLOYABLE )
+							end
 						end
 						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
 							curWep = bot:GetActiveWeapon()
@@ -695,7 +715,7 @@ function controlBots ( bot, cmd )
 	--Task 2
 	--Humans: Hit zombies with melee weapon
 	--Zombies: Go to hiding spot
-	if bot.Task == 2 then
+	if bot.Task == MELEE_ZOMBIE then
 		if bot:Team() != TEAM_UNDEAD then
 			--[[if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 500 ) then
 				cmd:SetForwardMove( 1000 )
@@ -800,7 +820,7 @@ function controlBots ( bot, cmd )
 	--Task 3
 	--Humans: Go to teammate and heal them
 	--Zombies: (Shade) Pickup props and throw them at humans
-	if bot.Task == 3 then
+	if bot.Task == HEAL_TEAMMATE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetHealing
 			
@@ -809,7 +829,6 @@ function controlBots ( bot, cmd )
 				bot.Disposition = SELF_DEFENSE
 				
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit" then
-					bot.lastWeapon = bot:GetActiveWeapon()
 					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_medicalkit"))
 				end
 				
@@ -817,19 +836,11 @@ function controlBots ( bot, cmd )
 				local medCooldown = (medWep:GetNextCharge() - CurTime())
 				
 				if !IsValid (myTarget) or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or medCooldown > 0 or medWep:GetPrimaryAmmoCount() <= 0 then 
-					if IsValid (bot.lastWeapon) then
-						cmd:SelectWeapon (bot.lastWeapon)
-					end
-			
 					bot:SetTask( GOTO_ARSENAL )
 				end
 				
 				if IsValid (myTarget) then
 					--[[if myTarget:Health() > (3 / 4 * myTarget:GetMaxHealth()) then --or bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit"
-						if IsValid (bot.lastWeapon) then
-							cmd:SelectWeapon (bot.lastWeapon)
-						end
-					
 						bot:SetTask( GOTO_ARSENAL )
 					end]]
 					
@@ -858,10 +869,7 @@ function controlBots ( bot, cmd )
 				
 				bot:CheckPropPhasing()
 			else
-				if IsValid (bot.lastWeapon) then
-					cmd:SelectWeapon (bot.lastWeapon)
-				end
-			
+
 				bot:SetTask( GOTO_ARSENAL )
 			end
 		else
@@ -870,23 +878,50 @@ function controlBots ( bot, cmd )
 	end
 	
 	--Task 4
-	--Humans: Place resupply box
+	--Humans: Place deployable
 	--Zombies: ...
-	if bot.Task == 4 then
+	if bot.Task == PLACE_DEPLOYABLE then
 		if bot:Team() != TEAM_UNDEAD then
-			if bot:GetActiveWeapon():GetClass() != "weapon_zs_resupplybox" and bot:HasWeapon("weapon_zs_resupplybox") then
-				cmd:SelectWeapon (bot:GetWeapon("weapon_zs_resupplybox"))
+			
+			if !IsValid(bot.FollowerEnt.TargetArsenal) then
+				bot:SetTask( GOTO_ARSENAL )
 			end
 			
-			--bot.attackTimer = true
-			bot.deployTimer = true
+			if IsValid(bot:GetActiveWeapon()) then
+				local curWep = bot:GetActiveWeapon()
+				bot.Disposition = SELF_DEFENSE
+				
+				if curWep:GetClass() == "weapon_zs_resupplybox" or curWep:GetClass() == "weapon_zs_messagebeacon" then
+					bot.attackTimer = true
+					bot.deployTimer = true
+				end
+				
+				if curWep:GetClass() == "weapon_zs_gunturret" or curWep:GetClass() == "weapon_zs_ffemitter" then
+					if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+						if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetCadingSpot, BIGGER, 125 ) then
+							bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+							CloseToPointCheck (bot, curgoal.pos, bot.FollowerEnt.TargetCadingSpot, cmd, false)					
+						else
+							bot.moveType = -1
+							bot.attackTimer = true
+							bot.deployTimer = true
+						end
+					end
+					
+					if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
+						bot:SetTask( GOTO_ARSENAL )
+					end
+				end
+			else
+				bot:SetTask( GOTO_ARSENAL )
+			end
 		end
 	end
 	
 	--Task 5
 	--Humans: Wander around
 	--Zombies: ...
-	if bot.Task == 5 then
+	if bot.Task == WANDER_AROUND then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
@@ -955,16 +990,13 @@ function controlBots ( bot, cmd )
 	--Task 6
 	--Humans: Repair cades
 	--Zombies: ...
-	if bot.Task == 6 then
+	if bot.Task == REPAIR_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetNailedProp
 			bot.Disposition = IGNORE_ENEMIES
 			
 			if bot:Health() <= (1.5 / 4 * bot:GetMaxHealth()) then
 				
-				if IsValid (bot.lastWeapon) then
-					cmd:SelectWeapon (bot.lastWeapon)
-				end
 				bot.lookPos = nil
 				bot.lookProp = nil
 				bot:SetTask( GOTO_ARSENAL )
@@ -972,7 +1004,6 @@ function controlBots ( bot, cmd )
 					
 			if IsValid(myTarget) then
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" then
-					bot.lastWeapon = bot:GetActiveWeapon()
 					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
 				end
 				
@@ -1054,9 +1085,6 @@ function controlBots ( bot, cmd )
 				end
 			else
 				
-				if IsValid (bot.lastWeapon) then
-					cmd:SelectWeapon (bot.lastWeapon)
-				end
 				bot.lookPos = nil
 				bot.lookProp = nil
 				bot:SetTask( GOTO_ARSENAL )
@@ -1067,14 +1095,13 @@ function controlBots ( bot, cmd )
 	--Task 7
 	--Humans: Pick up prop for cading
 	--Zombies: ...
-	if bot.Task == 7 then
+	if bot.Task == PICKUP_CADING_PROP then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingProp
 			bot.Disposition = IGNORE_ENEMIES
 			
 			if IsValid(myTarget) then
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" then
-					bot.lastWeapon = bot:GetActiveWeapon()
 					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
 				end
 				
@@ -1115,7 +1142,7 @@ function controlBots ( bot, cmd )
 	--Task 8
 	--Humans: Cade at cading spots
 	--Zombies: ...
-	if bot.Task == 8 then
+	if bot.Task == MAKE_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
 			
@@ -1170,9 +1197,6 @@ function controlBots ( bot, cmd )
 					bot.lookAngle = Angle(bot.lookAngle.x + 0.5, (myTarget - bot:EyePos()):Angle().y, bot.lookAngle.z)
 					--bot:SetTask( GOTO_ARSENAL )
 					if bot.lookAngle.x >= 89 then 
-						if IsValid (bot.lastWeapon) then
-							cmd:SelectWeapon (bot.lastWeapon)
-						end
 						--bot.heldProp = nil
 						
 						bot.sprintHold = false
@@ -1180,9 +1204,6 @@ function controlBots ( bot, cmd )
 					end
 					
 					if bot.heldProp:IsNailed() then
-						if IsValid (bot.lastWeapon) then
-							cmd:SelectWeapon (bot.lastWeapon)
-						end
 						--bot.heldProp = nil
 						
 						bot.sprintHold = false
@@ -1190,10 +1211,6 @@ function controlBots ( bot, cmd )
 					end
 				end
 			else
-				if IsValid (bot.lastWeapon) then
-					cmd:SelectWeapon (bot.lastWeapon)
-				end
-				
 				bot.sprintHold = false
 				bot:SetTask( GOTO_ARSENAL )
 			end
@@ -1203,7 +1220,7 @@ function controlBots ( bot, cmd )
 	--Task 9
 	--Humans: Get ammo from resupply box / pack resupply box
 	--Zombies: ...
-	if bot.Task == 9 then
+	if bot.Task == RESUPPLY_AMMO then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetResupply
 			bot.Disposition = IGNORE_ENEMIES
@@ -1239,7 +1256,7 @@ function controlBots ( bot, cmd )
 	--Task 10
 	--Humans: Pick up loot
 	--Zombies: ...
-	if bot.Task == 10 then
+	if bot.Task == PICKUP_LOOT then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetLootItem
 			bot.Disposition = SELF_DEFENSE
@@ -1294,7 +1311,7 @@ function controlBots ( bot, cmd )
 	--Task 11
 	--Humans: Defend at defending spot
 	--Zombies: ...
-	if bot.Task == 11 then
+	if bot.Task == DEFEND_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
 			bot.Disposition = OPPORTUNITY_FIRE
@@ -1347,7 +1364,7 @@ function controlBots ( bot, cmd )
 	--Task 12
 	--Humans: Snipe zombies
 	--Zombies: ...
-	if bot.Task == 12 then
+	if bot.Task == SNIPING then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
@@ -1373,7 +1390,7 @@ function controlBots ( bot, cmd )
 	--Task 13
 	--Humans: Follow
 	--Zombies: ...
-	if bot.Task == 13 then
+	if bot.Task == FOLLOW then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetTeammate
 			
@@ -1437,12 +1454,12 @@ function controlBots ( bot, cmd )
 	--Task 14
 	--Humans: Spawnkill zombies
 	--Zombies: ...
-	if bot.Task == 14 then
+	--[[if bot.Task == SPAWNKILL_ZOMBIES then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetEnemy
 			
 		end
-	end
+	end]]
 	
 	--Timer resets DO NOT REMOVE
 	if CurTime() > bot.targetFindDelay then
