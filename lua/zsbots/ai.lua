@@ -73,12 +73,13 @@ function controlBots ( bot, cmd )
 	if bot.Task == GOTO_ARSENAL or bot.Task == WANDER_AROUND or bot.Task == DEFEND_CADE or bot.Task == FOLLOW then
 		if bot:Team() != TEAM_UNDEAD and CurTime() > bot.targetFindDelay and bot.runAwayTimer <= 0 then
 			
-			if IsValid(bot:GetActiveWeapon()) then
-				local curWep = bot:GetActiveWeapon()
-				
-				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee or curWep.Primary.Heal then	
-					if bot:GetOtherWeaponWithAmmo() != nil then
-						bot:SelectWeapon(bot:GetOtherWeaponWithAmmo())
+			local curWep = bot:GetActiveWeapon()
+			local otherWep = bot:GetOtherWeaponWithAmmo()
+			
+			if IsValid(curWep) then
+				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee or curWep.Primary.Heal or curWep.AmmoIfHas then	
+					if otherWep != nil then
+						bot:SelectWeapon(otherWep)
 					else
 						for i, meleeWep in ipairs(bot:GetWeapons()) do 
 							if meleeWep.IsMelee then
@@ -90,8 +91,8 @@ function controlBots ( bot, cmd )
 					end
 				end
 			else	
-				if bot:GetOtherWeaponWithAmmo() != nil then
-					bot:SelectWeapon(bot:GetOtherWeaponWithAmmo())
+				if otherWep != nil then
+					bot:SelectWeapon(otherWep)
 				else
 					for i, meleeWep in ipairs(bot:GetWeapons()) do 
 						if meleeWep.IsMelee then
@@ -435,44 +436,60 @@ function controlBots ( bot, cmd )
 								end
 							end
 						end
-						if bot:HasWeapon("weapon_zs_resupplybox") then
-							bot:SelectWeapon(bot:GetWeapon("weapon_zs_resupplybox"))
-							bot:SetTask( PLACE_DEPLOYABLE )
-						elseif bot:HasWeapon("weapon_zs_messagebeacon") then
-							bot:SelectWeapon(bot:GetWeapon("weapon_zs_messagebeacon"))
-							bot:SetTask( PLACE_DEPLOYABLE )
-						elseif bot:HasWeapon("weapon_zs_gunturret") then
-							if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-								bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-								bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
-								
-								bot:SelectWeapon(bot:GetWeapon("weapon_zs_gunturret"))
+						
+						
+						if CurTime() > bot.targetFindDelay then
+							if bot:HasWeapon("weapon_zs_resupplybox") then
+								bot:SelectWeapon(bot:GetWeapon("weapon_zs_resupplybox"))
 								bot:SetTask( PLACE_DEPLOYABLE )
-							end
-						elseif bot:HasWeapon("weapon_zs_ffemitter") then
-							if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-								bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-								bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
-								
-								bot:SelectWeapon(bot:GetWeapon("weapon_zs_ffemitter"))
+							elseif bot:HasWeapon("weapon_zs_messagebeacon") then
+								bot:SelectWeapon(bot:GetWeapon("weapon_zs_messagebeacon"))
 								bot:SetTask( PLACE_DEPLOYABLE )
+							elseif bot:HasWeapon("weapon_zs_gunturret") then
+								if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+									
+									bot:SelectWeapon(bot:GetWeapon("weapon_zs_gunturret"))
+									bot:SetTask( PLACE_DEPLOYABLE )
+								end
+							elseif bot:HasWeapon("weapon_zs_ffemitter") then
+								if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+									
+									bot:SelectWeapon(bot:GetWeapon("weapon_zs_ffemitter"))
+									bot:SetTask( PLACE_DEPLOYABLE )
+								end
+							elseif bot:HasWeapon("weapon_zs_spotlamp") then
+								if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+									
+									bot:SelectWeapon(bot:GetWeapon("weapon_zs_spotlamp"))
+									bot:SetTask( PLACE_DEPLOYABLE )
+								end
 							end
 						end
+						
+						
 						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
-							curWep = bot:GetActiveWeapon()
+							local curWep = bot:GetActiveWeapon()
+							local otherWep = bot:GetOtherWeaponWithAmmo()
 							
-							if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep.Base != "weapon_zs_basemelee" then
-								if bot:GetOtherWeaponWithAmmo() == nil then
+							if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep:GetPrimaryAmmoType() != -1 and !curWep.IsMelee then
+								if otherWep == nil then
 									bot:SetTask( RESUPPLY_AMMO )
 								end
 							end
 							
 							if curWep.IsMelee then
-								if bot:GetOtherWeaponWithAmmo() == nil then
+								if otherWep == nil then
 									for i, wep in ipairs(bot:GetWeapons()) do
-										if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep.Base != "weapon_zs_basemelee" then
+										if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep:GetPrimaryAmmoType() != -1 and !curWep.IsMelee then
 											bot:SelectWeapon(wep)
 											bot:SetTask( RESUPPLY_AMMO )
+											
 											break
 										end
 									end
@@ -892,11 +909,12 @@ function controlBots ( bot, cmd )
 				bot.Disposition = SELF_DEFENSE
 				
 				if curWep:GetClass() == "weapon_zs_resupplybox" or curWep:GetClass() == "weapon_zs_messagebeacon" then
+					bot.moveType = -1
 					bot.attackTimer = true
 					bot.deployTimer = true
 				end
 				
-				if curWep:GetClass() == "weapon_zs_gunturret" or curWep:GetClass() == "weapon_zs_ffemitter" then
+				if curWep:GetClass() == "weapon_zs_gunturret" or curWep:GetClass() == "weapon_zs_ffemitter" or curWep:GetClass() == "weapon_zs_spotlamp" then
 					if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
 						if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetCadingSpot, BIGGER, 125 ) then
 							bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )

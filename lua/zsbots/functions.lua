@@ -992,7 +992,7 @@ function plymeta:GetOtherWeaponWithAmmo()
 	
 	for i, wep in ipairs(self:GetWeapons()) do 
 		if wep:Clip1() > 0 or self:GetAmmoCount( wep:GetPrimaryAmmoType() ) > 0 then
-			if !wep.IsMelee and !wep.Primary.Heal then
+			if !wep.IsMelee and !wep.Primary.Heal and !wep.AmmoIfHas and wep:GetPrimaryAmmoType() != -1 then
 				daWep = wep
 				
 				break
