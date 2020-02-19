@@ -24,4 +24,5 @@ zs_bot_kill |
 | zs_bot_can_cade |  
 zs_bot_can_pick_up_loot | 
 zs_bot_can_chat | 
+zs_bot_can_place_deployables |
 zs_bot_infinite_ammo | 
