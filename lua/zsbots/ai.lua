@@ -1419,7 +1419,6 @@ function controlBots ( bot, cmd )
 			
 				else
 					
-					
 					local atr = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = myTarget:LocalToWorld(myTarget:OBBCenter()),
@@ -1436,14 +1435,14 @@ function controlBots ( bot, cmd )
 							} )
 							
 							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
-								bot:SetTask( MELEE_ZOMBIES )
+								bot:SetTask( MELEE_ZOMBIE )
 							end
 						end
 					end
 					
 					bot:LootCheck()
 					
-					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 200 ) or atr.Hit or bot:GetBarricadeGhosting() then
+					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 80 ) or atr.Hit or bot:GetBarricadeGhosting() then
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 						bot:CheckPropPhasing()
 						
@@ -1458,13 +1457,18 @@ function controlBots ( bot, cmd )
 							bot:RunAwayCheck( cmd )
 						end
 					elseif !atr.Hit and !bot:GetBarricadeGhosting() then
-						bot.Disposition = ENGAGE_AND_INVESTIGATE
+						bot.Disposition = OPPORTUNITY_FIRE
 						bot.moveType = -1
 					end
 				end
 			else
-				bot.moveType = -1
-				bot.Disposition = ENGAGE_AND_INVESTIGATE
+				if !game.IsObj() and !GAMEMODE.ZombieEscape then
+					bot:SetTask( GOTO_ARSENAL )
+				end
+				if game.IsObj() or GAMEMODE.ZombieEscape then
+					bot.moveType = -1
+					bot.Disposition = ENGAGE_AND_INVESTIGATE
+				end
 			end
 		end
 	end
