@@ -9,7 +9,7 @@ These are Bots I'm making for the Garry's Mod Zombie Survival gamemode. They're 
 Unzip the downloaded file and then put the folder into your "garrysmod/addons" folder.
 
 # Things for servers
-**ULX commands:**
+**ULX commands (ADMIN ONLY):**
 | !addzsbot | 
 !kickzsbots | 
 !slayzsbots | 
