@@ -438,7 +438,7 @@ function controlBots ( bot, cmd )
 						end
 						
 						
-						if CurTime() > bot.targetFindDelay then
+						if CurTime() > bot.targetFindDelay and GetConVar( "zs_bot_can_place_deployables" ):GetInt() != 0 then
 							if bot:HasWeapon("weapon_zs_resupplybox") then
 								bot:SelectWeapon(bot:GetWeapon("weapon_zs_resupplybox"))
 								bot:SetTask( PLACE_DEPLOYABLE )
