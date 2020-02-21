@@ -162,8 +162,8 @@ function controlBots ( bot, cmd )
 	
 	if !bot:IsFrozen() then
 		local lerpAngle = LerpAngle( bot.rotationSpeed * FrameTime( ), bot:EyeAngles(), bot.lookAngle )
-		bot:SetEyeAngles(lerpAngle)
-		cmd:SetViewAngles(lerpAngle)
+		bot:SetEyeAngles( Angle( lerpAngle.x, lerpAngle.y, 0 ) )
+		cmd:SetViewAngles( Angle( lerpAngle.x, lerpAngle.y, 0 ) )
 	end
 	
 	if !IsValid( bot.FollowerEnt ) then
@@ -1507,7 +1507,7 @@ function botDeath( ply )
 	if GAMEMODE:GetWave() == 0 then return end
 	if ply:Team() != TEAM_UNDEAD and ply:GetZombieClassTable().Name == "Fresh Dead" then return end
 	
-	timer.Simple(3, function()
+	timer.Simple(2, function()
 		if !IsValid(ply) or ply:Alive() or GAMEMODE.RoundEnded then return end
 		
 		if GAMEMODE:GetWaveActive() then
