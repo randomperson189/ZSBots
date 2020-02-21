@@ -60,7 +60,7 @@ if not vecmeta then return end
 		end
 	end]]
 
-function vecmeta:QuickDistanceCheck(otherVector, checkType, dist)
+function vecmeta:QuickDistanceCheck( otherVector, checkType, dist )
 	if checkType == 1 then
 		return self:DistToSqr(otherVector) > (dist * dist)
 	elseif checkType == 2 then
@@ -74,13 +74,32 @@ function vecmeta:QuickDistanceCheck(otherVector, checkType, dist)
 	return nil
 end
 
-function plymeta:SetTask(task)
+function plymeta:SetBotControlling( b )
+	if self:IsBot() then return end
+	
+	if b then
+		if !self.IsZSBot2 then
+			print ( "Started bot controlling " .. self:Name() )
+			self:SetBotValues()
+			self.IsZSBot2 = true
+			self:SetTask( GOTO_ARSENAL )
+		end
+	else
+		if self.IsZSBot2 then
+			print ( "Stopped bot controlling " .. self:Name() )
+			self.IsZSBot2 = false
+			if IsValid(self.FollowerEnt) then self.FollowerEnt:Remove() end
+		end
+	end
+end
+
+function plymeta:SetTask( task )
 	self.Task = task
 	
 	if IsValid(self.FollowerEnt) then self.FollowerEnt:NavCheck() end
 end
 
-function plymeta:SetLookAt(position)
+function plymeta:SetLookAt( position )
 	self.lookAngle = (position - self:EyePos()):Angle()
 end
 
@@ -1185,105 +1204,110 @@ function player.CreateZSBot( name )
 		ply = player.CreateNextBot( name )
 		ply.IsZSBot2 = true --Using IsZSBot2 cuz shitty GitHub ZSBots use IsZSBot and so it would conflict
 		
-		--FUNCTION DELAYS
-		ply.targetFindDelay = CurTime()
-		
-		--TIMERS
-		ply.guardTimer = math.random( 5, 10 )
-		ply.runAwayTimer = 0
-		ply.newPointTimer = 15
-		--ply.lookAroundTimer = 0
-		--ply.rotationTimer = 0
-		
-		--BOT NAVIGATOR
-		if !IsValid(ply.FollowerEnt) then
-			ply.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
-			ply.FollowerEnt:Spawn()
-			ply.FollowerEnt.Bot = ply
-		end
-		
-		--OTHER STUFF
-		ply.LastPath = nil
-		ply.lastPos = Vector(0, 0 , 0)
-		ply.lookProp = nil
-		ply.lookPos = nil
-		ply.lookDistance = 1000
-		ply.heldProp = nil
-		ply.cJumpDelay = 0
-		ply.strafeType = -1 --0 = left, 1 = right, 2 = back
-		ply.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
-		ply.shouldGoOutside = false
-		ply.canShouldGoOutside = true
-		
-		--UNUSED THINGYS I MIGHT REMOVE XD
-		--[[ply.stopVel = 40
-		ply.canRaycast = true]]
-		
-		--ply.State = 0 --Idle, Hunt, MoveTo, Buy, Hide
-		--ply.stateName = "NONE"
-		ply.Attacking = false
-		ply.Task = 0
-		ply.Disposition = IGNORE_ENEMIES --ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
-		ply.Skill = math.random(0, 100)
-		--ply.Morale = 0 --EXCELLENT, GOOD, POSITIVE, NEUTRAL, NEGATIVE, BAD, TERRIBLE
-		--ply.moraleName = "NONE"
-		ply.nearbyFriends = 0
-		ply.nearbyEnemies = 0
-		
-		--NAV AREAS
-		--[[ply.DefendingSpots = {  }
-		ply.CadingSpots = {  }
-		ply.UnCheckableAreas = {  }]]
-		
-		--CHAT MESSAGES
-		ply.sayMessage = ""
-		ply.sayTeamMessage = ""
-		
-		ply.prevSay = -1
-		
-		--INPUT TIMERS
-		ply.canExitLadderCheck = true
-		ply.exitLadderCheck = false
-		
-		ply.canCJumpTimer = true
-		ply.cJumpTimer = false
-		
-		ply.canUseTimer = true
-		ply.useTimer = false
-		
-		ply.canAttackTimer = true
-		ply.attackTimer = false
-		
-		ply.canAttack2Timer = true
-		ply.attack2Timer = false
-		
-		ply.canDeployTimer = true
-		ply.deployTimer = false
-		
-		ply.canZoomTimer = true
-		ply.zoomTimer = false
-		
-		--INPUT VALUES
-		ply.forwardHold = false
-		ply.attackHold = false
-		ply.attack2Hold = false
-		ply.reloadHold = false
-		ply.jumpHold = false
-		ply.crouchHold = false
-		ply.useHold = false
-		ply.zoomHold = false
-		ply.sprintHold = false
-		
-		--SMOOTH ROTATION
-		ply.lookAngle = Angle(0, 0, 0)
-		ply.rotationSpeed = 5
-		ply.angle = Angle(0, 0, 0)
+		--SET THE VALUES OF THE BOT
+		ply:SetBotValues()
 		
 		--DO STUFF ON SPAWN LIKE CHOOSING LOADOUTS, CHANGING CLASS, ETC
 		ply:DoSpawnStuff( false )
 	else
 		MsgC( Color( 255, 255, 255 ), "Failed to create ZSBot.\n" )
 	end
+end
+
+function plymeta:SetBotValues()
+	--FUNCTION DELAYS
+	self.targetFindDelay = CurTime()
+	
+	--TIMERS
+	self.guardTimer = math.random( 5, 10 )
+	self.runAwayTimer = 0
+	self.newPointTimer = 15
+	--self.lookAroundTimer = 0
+	--self.rotationTimer = 0
+	
+	--BOT NAVIGATOR
+	if !IsValid(self.FollowerEnt) then
+		self.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
+		self.FollowerEnt:Spawn()
+		self.FollowerEnt.Bot = self
+	end
+	
+	--OTHER STUFF
+	self.LastPath = nil
+	self.lastPos = Vector(0, 0 , 0)
+	self.lookProp = nil
+	self.lookPos = nil
+	self.lookDistance = 1000
+	self.heldProp = nil
+	self.cJumpDelay = 0
+	self.strafeType = -1 --0 = left, 1 = right, 2 = back
+	self.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
+	self.shouldGoOutside = false
+	self.canShouldGoOutside = true
+	
+	--UNUSED THINGYS I MIGHT REMOVE XD
+	--[[self.stopVel = 40
+	self.canRaycast = true]]
+	
+	--self.State = 0 --Idle, Hunt, MoveTo, Buy, Hide
+	--self.stateName = "NONE"
+	self.Attacking = false
+	self.Task = 0
+	self.Disposition = IGNORE_ENEMIES --ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
+	self.Skill = math.random(0, 100)
+	--self.Morale = 0 --EXCELLENT, GOOD, POSITIVE, NEUTRAL, NEGATIVE, BAD, TERRIBLE
+	--self.moraleName = "NONE"
+	self.nearbyFriends = 0
+	self.nearbyEnemies = 0
+	
+	--NAV AREAS
+	--[[self.DefendingSpots = {  }
+	self.CadingSpots = {  }
+	self.UnCheckableAreas = {  }]]
+	
+	--CHAT MESSAGES
+	self.sayMessage = ""
+	self.sayTeamMessage = ""
+	
+	self.prevSay = -1
+	
+	--INPUT TIMERS
+	self.canExitLadderCheck = true
+	self.exitLadderCheck = false
+	
+	self.canCJumpTimer = true
+	self.cJumpTimer = false
+	
+	self.canUseTimer = true
+	self.useTimer = false
+	
+	self.canAttackTimer = true
+	self.attackTimer = false
+	
+	self.canAttack2Timer = true
+	self.attack2Timer = false
+	
+	self.canDeployTimer = true
+	self.deployTimer = false
+	
+	self.canZoomTimer = true
+	self.zoomTimer = false
+	
+	--INPUT VALUES
+	self.forwardHold = false
+	self.attackHold = false
+	self.attack2Hold = false
+	self.reloadHold = false
+	self.jumpHold = false
+	self.crouchHold = false
+	self.useHold = false
+	self.zoomHold = false
+	self.sprintHold = false
+	
+	--SMOOTH ROTATION
+	self.lookAngle = Angle(0, 0, 0)
+	self.rotationSpeed = 5
+	self.angle = Angle(0, 0, 0)
 end
 
 concommand.Add( "zs_bot_add", function ( ply, cmd, args, argStr )
@@ -1715,7 +1739,9 @@ function plymeta:DoSpawnStuff( changeClass )
 		timer.Simple(0, function()
 			if !IsValid(self) then return end
 			
-			self:SetPlayerColor(Vector(math.Rand (0, 1), math.Rand (0, 1), math.Rand (0, 1)))
+			if self:IsBot() then
+				self:SetPlayerColor(Vector(math.Rand (0, 1), math.Rand (0, 1), math.Rand (0, 1)))
+			end
 		end)
 		
 		if GAMEMODE.ZombieEscape then
