@@ -341,13 +341,13 @@ function controlBots ( bot, cmd )
 			bot.prevSay = -1
 		end
 		
-		if IsValid (bot.FollowerEnt.TargetEnemy) then
+		--[[if IsValid (bot.FollowerEnt.TargetEnemy) then
 			if bot.FollowerEnt.TargetEnemy:Team() == TEAM_UNDEAD then
 				if bot.FollowerEnt.TargetEnemy:GetZombieClassTable().Boss and bot.prevSay == -1 then
 					SayPresetMessage(bot, MSG_BOSS_OUTSIDE, true)
 				end
 			end
-		end
+		end]]
 	end
 	
 	--if bot:HasWeapon ("weapon_zs_medicalkit") and bot:Health() <= 70 then
