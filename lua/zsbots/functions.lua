@@ -1672,9 +1672,13 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	
 	if lookAtPoint then
 		if #bot.FollowerEnt.P:GetAllSegments() <= 2 then
-			bot:LookatPosXY( cmd, goalPos )
+			--bot:LookatPosXY( cmd, goalPos )
+			
+			bot.lookAngle = (goalPos - bot:GetPos()):Angle()
 		else
-			bot:LookatPosXY(cmd, curgoalPos )
+			--bot:LookatPosXY(cmd, curgoalPos )
+			
+			bot.lookAngle = (curgoalPos - bot:GetPos()):Angle()
 		end
 	end
 	
