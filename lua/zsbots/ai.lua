@@ -210,8 +210,8 @@ function controlBots ( bot, cmd )
 	end
 	
 	if CurTime() > bot.targetFindDelay then
-		bot.nearbyFriends = CountNearbyFriends( bot, 3000 )
-		bot.nearbyEnemies = CountNearbyEnemies( bot, 3000 )
+		--bot.nearbyFriends = CountNearbyFriends( bot, 3000 )
+		--bot.nearbyEnemies = CountNearbyEnemies( bot, 3000 )
 		
 		if bot:Team() == TEAM_UNDEAD then
 			--bot.attackProp = FindNearestProp2( bot )
@@ -219,9 +219,9 @@ function controlBots ( bot, cmd )
 			
 			if ROUNDWINNER != bot:Team() then
 				if bot.Task == HIDE_FROM_HUMANS then
-					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
+					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
 				elseif AnEnemyIsInSight("player", bot) then
-					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
+					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
 				else
 					bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot )
 				end

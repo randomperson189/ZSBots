@@ -678,7 +678,6 @@ function AnEnemyIsInSight(className, thisEnt)
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
 				endpos = thisEnt:AimPoint(entity),
-				mask = MASK_SHOT,
 				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
 			} )
 			
@@ -691,8 +690,10 @@ function AnEnemyIsInSight(className, thisEnt)
     return false
 end
 
-function FindNearestEnemyInSight( className, thisEnt )
-
+function FindNearestEnemyInSight( className, thisEnt, seeThruTrans )
+	
+	if seeThruTrans == nil then seeThruTrans = true end
+	
 	local nearestEnt
 	local range = math.huge
     
@@ -701,17 +702,30 @@ function FindNearestEnemyInSight( className, thisEnt )
 		
         if ( distance <= range and entity != thisEnt and entity:Team() != thisEnt:Team() and entity:Alive() and entity:GetZombieClassTable().Name != "Crow" ) then
 			
-			local tr = util.TraceLine( {
-				start = thisEnt:EyePos(),
-				endpos = thisEnt:AimPoint(entity),
-				mask = MASK_SHOT,
-				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
-			} )
-			
-			if !tr.Hit  then
-				nearestEnt = entity
-				range = distance
-            end
+			if seeThruTrans then
+				local tr = util.TraceLine( {
+					start = thisEnt:EyePos(),
+					endpos = thisEnt:AimPoint(entity),
+					mask = MASK_SHOT,
+					filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+				} )
+				
+				if !tr.Hit  then
+					nearestEnt = entity
+					range = distance
+				end
+			else
+				local tr = util.TraceLine( {
+					start = thisEnt:EyePos(),
+					endpos = thisEnt:AimPoint(entity),
+					filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+				} )
+				
+				if !tr.Hit  then
+					nearestEnt = entity
+					range = distance
+				end
+			end
         end 
     end 
     return nearestEnt
