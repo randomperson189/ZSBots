@@ -570,14 +570,16 @@ timer.Create( "mah timer", 1, 0, function()
 	end
 end )]]
 
-function plymeta:LookatPosXY( cmd, pos )
+function plymeta:LookatPosXY( cmd, pos, forward )
+	if forward == nil then forward = false end
 	local theAngle = nil
 	
-	if self:WaterLevel() <= 0 then
+	if forward then
 		theAngle = (Vector (pos.x, pos.y, 0) - Vector (self:GetPos().x, self:GetPos().y, 0)):Angle()
 	else
 		theAngle = (Vector (pos.x, pos.y, pos.z) - Vector (self:GetPos().x, self:GetPos().y, self:GetPos().z)):Angle()
 	end
+	
 	self.lookAngle = Angle( theAngle.x, theAngle.y, 0 )
 end
 
@@ -1686,13 +1688,9 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	
 	if lookAtPoint then
 		if #bot.FollowerEnt.P:GetAllSegments() <= 2 then
-			--bot:LookatPosXY( cmd, goalPos )
-			
-			bot.lookAngle = (goalPos - bot:GetPos()):Angle()
+			bot:LookatPosXY( cmd, goalPos )
 		else
-			--bot:LookatPosXY(cmd, curgoalPos )
-			
-			bot.lookAngle = (curgoalPos - bot:GetPos()):Angle()
+			bot:LookatPosXY(cmd, curgoalPos )
 		end
 	end
 	

@@ -920,6 +920,9 @@ function controlBots ( bot, cmd )
 							bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
 							CloseToPointCheck (bot, curgoal.pos, bot.FollowerEnt.TargetCadingSpot, cmd, false)					
 						else
+							local theAng = (bot.FollowerEnt.TargetCadingSpot - bot:GetPos()):Angle()
+							bot.lookAngle = Angle(bot.lookAngle.x, theAng.y, 0)
+							
 							bot.moveType = -1
 							bot.attackTimer = true
 							bot.deployTimer = true
