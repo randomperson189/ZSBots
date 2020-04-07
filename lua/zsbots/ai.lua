@@ -172,14 +172,19 @@ function controlBots ( bot, cmd )
 		bot.FollowerEnt.Bot = bot
 	end
 	
-	local daPos = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( bot:GetPos() )
-	if bot.FollowerEnt:GetPos() != daPos then
-		--bot.FollowerEnt:SetPos( bot:GetPos() )
-		bot.FollowerEnt:SetPos( daPos )
-	end
-	
 	if bot.FollowerEnt.P then
 		bot.LastPath = bot.FollowerEnt.P:GetAllSegments()
+	end
+	
+	if bot.LastPath then
+		local daPos = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( bot:GetPos() )
+		if bot.FollowerEnt:GetPos() != daPos then
+			bot.FollowerEnt:SetPos( daPos )
+		end
+	else
+		if bot.FollowerEnt:GetPos() != bot:GetPos() then
+			bot.FollowerEnt:SetPos( bot:GetPos() )
+		end
 	end
 	
 	if !bot.LastPath then return end 
