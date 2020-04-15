@@ -14,3 +14,5 @@ CreateConVar( "zs_bot_can_buy", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "I
 CreateConVar( "zs_bot_can_place_deployables", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may place deployables." )
 CreateConVar( "zs_bot_can_pick_up_loot", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may pick up loot." )
 CreateConVar( "zs_bot_can_chat", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "If nonzero, ZSBots may send chat messages." )
+
+CreateConVar( "zs_bot_force_zombie", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE}, "Force ZSBots to be zombies." )

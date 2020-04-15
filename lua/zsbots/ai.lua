@@ -111,6 +111,13 @@ function controlBots ( bot, cmd )
 			bot.BuffMuscular = true
 			bot:DoMuscularBones()
 		end
+		
+		if GetConVar( "zs_bot_force_zombie" ):GetInt() != 0 and bot:Team() != TEAM_UNDEAD then
+			bot:KillSilent()
+			bot:SetTeam(TEAM_UNDEAD)
+			bot:DoHulls(classId, TEAM_UNDEAD)
+			bot:UnSpectateAndSpawn()
+		end
 	end
 	
 	if GetConVar( "zs_bot_infinite_ammo" ):GetInt() != 0 and IsValid(bot:GetActiveWeapon()) then
