@@ -281,7 +281,7 @@ function plymeta:InputTimers()
 				timer.Simple (1, function()
 					if !IsValid(self) then return end
 					
-					if self:GetVelocity():Length() < 10 then
+					if self:GetVelocity():Length() < 10 and self.moveType != -1 then
 						self.strafeType = 0
 						--self.useHold = true
 						
@@ -306,12 +306,11 @@ function plymeta:InputTimers()
 							end)
 						end)
 					else
-					
-					self.crouchHold = false
-					timer.Simple (0.10, function()
+						self.crouchHold = false
+						timer.Simple (0.10, function()
 						if !IsValid(self) then return end
-						self.cJumpTimer = false
-						self.canCJumpTimer = true
+							self.cJumpTimer = false
+							self.canCJumpTimer = true
 						end)
 					end
 				end)

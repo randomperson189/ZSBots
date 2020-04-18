@@ -116,7 +116,10 @@ function controlBots ( bot, cmd )
 			bot:KillSilent()
 			bot:SetTeam(TEAM_UNDEAD)
 			bot:DoHulls(classId, TEAM_UNDEAD)
-			bot:UnSpectateAndSpawn()
+			
+			if GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveActive() then
+				bot:UnSpectateAndSpawn()
+			end
 		end
 	end
 	
