@@ -15,15 +15,19 @@ function controlBots ( bot, cmd )
 		debugoverlay.Sphere( bot.FollowerEnt.TargetPosition, 5, 0, Color( 255, 255, 255, 0 ), true )
 	end
 	
+	--[[if bot:Team() != TEAM_UNDEAD then
+		if bot.Task == PICKUP_LOOT and IsValid(bot.FollowerEnt.TargetLootItem) then
+			debugoverlay.Cross(bot.FollowerEnt.TargetLootItem:GetPos(), 7.5, 0, Color( 255, 255, 0, 255 ), true)
+			debugoverlay.ScreenText( 0.55, 0.44, "Target Loot: " .. tostring(bot.FollowerEnt.TargetLootItem), 0, Color(255, 255, 0))
+		end
+	elseif bot.Task == GOTO_HUMANS
+		
+	end]]
+	
 	for i, ply in ipairs(player.GetHumans()) do
 		if ply.FSpectatingEnt == bot then
 			debugoverlay.ScreenText( 0.55, 0.28, "Name: " .. bot:Name(), 0, Color(255, 255, 255) )
 			debugoverlay.ScreenText( 0.55, 0.3, "Health: " .. bot:Health(), 0, Color(255, 255, 0))
-			
-			--[[if bot.FollowerEnt.TargetPosition != nil then
-				debugoverlay.Sphere( bot.FollowerEnt.TargetPosition, 5, 0, Color( 255, 255, 255, 0 ), true )
-				debugoverlay.ScreenText( 0.55, 0.26, "Target Position: " .. tostring(bot.FollowerEnt.TargetPosition), 0, Color(255, 255, 255) )
-			end]]
 			
 			if IsValid(bot:GetActiveWeapon()) then
 				debugoverlay.ScreenText( 0.55, 0.32, "Weapon: " .. tostring(bot:GetActiveWeapon():GetClass()), 0, Color(255, 255, 255) )
@@ -34,6 +38,11 @@ function controlBots ( bot, cmd )
 			end
 			
 			debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. bot.Skill .. "%", 0, Color(255, 255, 255))
+			
+			--[[if bot:Team() == TEAM_HUMAN and bot.Task == PICKUP_LOOT and IsValid(bot.FollowerEnt.TargetLootItem) then
+				debugoverlay.Box(bot.FollowerEnt.TargetLootItem:GetPos(), bot.FollowerEnt.TargetLootItem:OBBMins(), bot.FollowerEnt.TargetLootItem:OBBMaxs(), 0, Color( 255, 255, 0, 0 ))
+				debugoverlay.ScreenText( 0.55, 0.44, "Target Loot: " .. tostring(bot.FollowerEnt.TargetLootItem), 0, Color(255, 255, 255))
+			end]]
 			
 			if !bot.Attacking then
 				debugoverlay.ScreenText( 0.55, 0.4, "Task: " .. bot:GetTaskName(), 0, Color(0, 255, 0))

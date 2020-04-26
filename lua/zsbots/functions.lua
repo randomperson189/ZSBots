@@ -1709,10 +1709,10 @@ function plymeta:DoLadderMovement (cmd, curgoal)
 	
 	if self:GetPos().z <= curgoal.pos.z then
 		self.lookAngle = Angle (-20, curgoalposXY.y, self:EyeAngles().z)
-		GAMEMODE:TopNotify("up")
+		--GAMEMODE:TopNotify("up")
 	else
 		self.lookAngle = Angle (40, curgoalposXY.y, self:EyeAngles().z)
-		GAMEMODE:TopNotify("down")
+		--GAMEMODE:TopNotify("down")
 	end
 	
 	--self:SetLookAt(curgoal.pos)
