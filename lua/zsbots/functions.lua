@@ -48,17 +48,125 @@ if not entmeta then return end
 local vecmeta = FindMetaTable("Vector")
 if not vecmeta then return end
 
---[[if IsValid(bot.FollowerEnt.TargetArsenal) then
-		for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
-			debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
-		end
+function plymeta:DoSpectateDebugUI()
+	if GetConVar( "zs_bot_debug_spectator" ):GetInt() == 0 then return end
+
+	for i, ply in ipairs(player.GetHumans()) do
+		if ply.FSpectatingEnt == self then
 		
-		for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
-			if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-				debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
+			local FE = self.FollowerEnt
+			local daPos = nil
+			local daName = nil
+
+			if self.Task == GOTO_ARSENAL then
+				if self:Team() != TEAM_UNDEAD then
+					if IsValid( FE.TargetArsenal ) then
+						daPos = FE.TargetArsenal:GetPos()
+						daName = FE.TargetArsenal
+					end
+				elseif IsValid( FE.TargetEnemy ) then
+					daPos = FE.TargetEnemy:GetPos()
+					daName = FE.TargetEnemy
+				end
 			end
+
+			if self.Task == MELEE_ZOMBIE then
+				if self:Team() != TEAM_UNDEAD then
+					if IsValid( FE.TargetEnemy ) then
+						daPos = FE.TargetEnemy:GetPos()
+						daName = FE.TargetEnemy
+					end
+				elseif FE.TargetPosition != nil then
+					daPos = FE.TargetPosition
+					daName = FE.TargetPosition
+				end
+			end
+
+			if self.Task == FOLLOW then
+				if IsValid( FE.TargetTeammate ) then 
+					daPos = FE.TargetTeammate:GetPos()
+					daName = FE.TargetTeammate
+				end
+			end
+
+			if self.Task == HEAL_TEAMMATE then
+				if IsValid( FE.TargetHealing ) then 
+					daPos = FE.TargetHealing:GetPos()
+					daName = FE.TargetHealing
+				end
+			end
+
+			if FE.TargetPosition != nil then
+				if self.Task == WANDER_AROUND or self.Task == SNIPING then
+					daPos = FE.TargetPosition
+					daName = FE.TargetPosition
+				end
+			end
+
+			if IsValid( FE.TargetNailedProp ) and self.Task == REPAIR_CADE then
+				daPos = FE.TargetNailedProp:GetPos()
+				daName = FE.TargetNailedProp
+			end
+
+			if IsValid( FE.TargetCadingProp ) and self.Task == PICKUP_CADING_PROP then
+				daPos = FE.TargetCadingProp:GetPos()
+				daName = FE.TargetCadingProp
+			end
+
+			if FE.TargetCadingSpot != nil then 
+				if self.Task == MAKE_CADE or self.Task == DEFEND_CADE or self.Task == PLACE_DEPLOYABLE then
+					daPos = FE.TargetCadingSpot
+					daName = FE.TargetCadingSpot
+				end
+			end
+
+			if IsValid( FE.TargetResupply ) and self.Task == RESUPPLY_AMMO then
+				--if self:GetPos():QuickDistanceCheck( FE.TargetResupply:GetPos(), BIGGER, 100 ) then
+					daPos = FE.TargetResupply:GetPos()
+					daName = FE.TargetResupply
+				--end
+			end
+
+			if IsValid( FE.TargetLootItem ) and self.Task == PICKUP_LOOT then
+				daPos = FE.TargetLootItem:GetPos()
+				daName = FE.TargetLootItem
+			end
+			
+			if daPos != nil then debugoverlay.Cross(daPos, 7.5, 0, Color( 255, 255, 0, 255 ), true) end
+			
+			debugoverlay.ScreenText( 0.55, 0.28, "Name: " .. self:Name(), 0, Color(255, 255, 255) )
+			debugoverlay.ScreenText( 0.55, 0.3, "Health: " .. self:Health(), 0, Color(255, 255, 0))
+			
+			if IsValid(self:GetActiveWeapon()) then
+				debugoverlay.ScreenText( 0.55, 0.32, "Weapon: " .. tostring(self:GetActiveWeapon():GetClass()), 0, Color(255, 255, 255) )
+				
+				if self:GetActiveWeapon():GetPrimaryAmmoType() != -1 then
+					debugoverlay.ScreenText( 0.55, 0.34, "Ammo: " .. self:GetActiveWeapon():Clip1() .. "/" .. self:GetAmmoCount(self:GetActiveWeapon():GetPrimaryAmmoType()), 0, Color(255, 255, 0))
+				end
+			end
+			
+			debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. self.Skill .. "%", 0, Color(255, 255, 255))
+			
+			--[[if self:Team() == TEAM_HUMAN and self.Task == PICKUP_LOOT and IsValid(self.FollowerEnt.TargetLootItem) then
+				debugoverlay.Box(self.FollowerEnt.TargetLootItem:GetPos(), self.FollowerEnt.TargetLootItem:OBBMins(), self.FollowerEnt.TargetLootItem:OBBMaxs(), 0, Color( 255, 255, 0, 0 ))
+				debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(self.FollowerEnt.TargetLootItem), 0, Color(255, 255, 0))
+			end]]
+			
+			if !self.Attacking then
+				debugoverlay.ScreenText( 0.55, 0.4, "Task: " .. self:GetTaskName(), 0, Color(0, 255, 0))
+				debugoverlay.ScreenText( 0.55, 0.42, "Disposition: " .. self:GetDispositionName(), 0, Color(100, 100, 255))
+				if daName != nil then debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(daName), 0, Color(255, 255, 0)) end
+			elseif IsValid(self.FollowerEnt.TargetEnemy) then
+				debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. self.FollowerEnt.TargetEnemy:Name(), 0, Color(255, 0, 0))
+			end
+			
+			debugoverlay.ScreenText( 0.55, 0.54, "Steady view = " .. "N/A", 0, Color(255, 255, 0))
+			debugoverlay.ScreenText( 0.55, 0.56, "Nearby friends = " .. self.nearbyFriends, 0, Color(102, 254, 100))
+			debugoverlay.ScreenText( 0.55, 0.58, "Nearby enemies = " .. self.nearbyEnemies, 0, Color(254, 100, 100))
+			debugoverlay.ScreenText( 0.55, 0.6, "Nav Area: " .. tostring(navmesh.GetNavArea( self:EyePos(), math.huge )), 0, Color(255, 255, 255))
 		end
-	end]]
+	end
+end
 
 function vecmeta:QuickDistanceCheck( otherVector, checkType, dist )
 	if checkType == 1 then
@@ -679,7 +787,7 @@ function AnEnemyIsInSight(className, thisEnt)
 			local tr = util.TraceLine( {
 				start = thisEnt:EyePos(),
 				endpos = thisEnt:AimPoint(entity),
-				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+				filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" and !ent.IsBarricadeObject ) then return true end end
 			} )
 			
 			if !tr.Hit then
@@ -708,7 +816,7 @@ function FindNearestEnemyInSight( className, thisEnt, seeThruTrans )
 					start = thisEnt:EyePos(),
 					endpos = thisEnt:AimPoint(entity),
 					mask = MASK_SHOT,
-					filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+					filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" and !ent.IsBarricadeObject ) then return true end end
 				} )
 				
 				if !tr.Hit  then
@@ -719,7 +827,7 @@ function FindNearestEnemyInSight( className, thisEnt, seeThruTrans )
 				local tr = util.TraceLine( {
 					start = thisEnt:EyePos(),
 					endpos = thisEnt:AimPoint(entity),
-					filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+					filter = function( ent ) if ( !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" and !ent.IsBarricadeObject ) then return true end end
 				} )
 				
 				if !tr.Hit  then
@@ -1485,7 +1593,7 @@ function plymeta:LootCheck()
 			filter = function( ent ) if ( ent != self.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
 		} )
 		
-		debugoverlay.Line( self:EyePos(), self.FollowerEnt.TargetLootItem:LocalToWorld(self.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+		--debugoverlay.Line( self:EyePos(), self.FollowerEnt.TargetLootItem:LocalToWorld(self.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 		
 		--if IsValid (self.FollowerEnt.TargetEnemy) then
 			if !lootTrace.Hit then
@@ -1558,7 +1666,7 @@ function plymeta:ShootAtTarget()
 		colour = Color( 0, 255, 0, 0)
 	end
 	
-	debugoverlay.Box( self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.FollowerEnt.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour )
+	if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.FollowerEnt.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour ) end
 end
 
 function plymeta:AimPoint( target )
@@ -1590,7 +1698,7 @@ function plymeta:AimPoint( target )
 				center = LocalToWorld( center, Angle(0, 0, 0), pos, rot )
 				--print ("Mins is ", mins, "Maxs is ", maxs)
 				
-				--debugoverlay.Sphere( center, 3, 0, Color( 255, 255, 255, 0 ), true )
+				--debugoverlay.Sphere( center, 3, 0, Color( 255, 0, 0, 0 ), true )
 				
 				return center
 			end

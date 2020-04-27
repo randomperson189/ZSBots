@@ -1,6 +1,8 @@
 function controlBots ( bot, cmd )
 	if !bot.IsZSBot2 then return end
 	
+	--==================== START FUNCTIONS ====================
+	
 	cmd:ClearMovement()
 	cmd:ClearButtons()
 	
@@ -11,72 +13,80 @@ function controlBots ( bot, cmd )
 	CheckNavMeshAttributes( bot, cmd )
 	--morale colour (0, 201, 201)
 	
-	if bot.FollowerEnt.TargetPosition != nil then
-		debugoverlay.Sphere( bot.FollowerEnt.TargetPosition, 5, 0, Color( 255, 255, 255, 0 ), true )
-	end
+	bot:DoSpectateDebugUI()
 	
-	--[[if bot:Team() != TEAM_UNDEAD then
-		if bot.Task == PICKUP_LOOT and IsValid(bot.FollowerEnt.TargetLootItem) then
-			debugoverlay.Cross(bot.FollowerEnt.TargetLootItem:GetPos(), 7.5, 0, Color( 255, 255, 0, 255 ), true)
-			debugoverlay.ScreenText( 0.55, 0.44, "Target Loot: " .. tostring(bot.FollowerEnt.TargetLootItem), 0, Color(255, 255, 0))
-		end
-	elseif bot.Task == GOTO_HUMANS
-		
-	end]]
-	
-	for i, ply in ipairs(player.GetHumans()) do
-		if ply.FSpectatingEnt == bot then
-			debugoverlay.ScreenText( 0.55, 0.28, "Name: " .. bot:Name(), 0, Color(255, 255, 255) )
-			debugoverlay.ScreenText( 0.55, 0.3, "Health: " .. bot:Health(), 0, Color(255, 255, 0))
-			
-			if IsValid(bot:GetActiveWeapon()) then
-				debugoverlay.ScreenText( 0.55, 0.32, "Weapon: " .. tostring(bot:GetActiveWeapon():GetClass()), 0, Color(255, 255, 255) )
-				
-				if bot:GetActiveWeapon():GetPrimaryAmmoType() != -1 then
-					debugoverlay.ScreenText( 0.55, 0.34, "Ammo: " .. bot:GetActiveWeapon():Clip1() .. "/" .. bot:GetAmmoCount(bot:GetActiveWeapon():GetPrimaryAmmoType()), 0, Color(255, 255, 0))
-				end
-			end
-			
-			debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. bot.Skill .. "%", 0, Color(255, 255, 255))
-			
-			--[[if bot:Team() == TEAM_HUMAN and bot.Task == PICKUP_LOOT and IsValid(bot.FollowerEnt.TargetLootItem) then
-				debugoverlay.Box(bot.FollowerEnt.TargetLootItem:GetPos(), bot.FollowerEnt.TargetLootItem:OBBMins(), bot.FollowerEnt.TargetLootItem:OBBMaxs(), 0, Color( 255, 255, 0, 0 ))
-				debugoverlay.ScreenText( 0.55, 0.44, "Target Loot: " .. tostring(bot.FollowerEnt.TargetLootItem), 0, Color(255, 255, 255))
-			end]]
-			
-			if !bot.Attacking then
-				debugoverlay.ScreenText( 0.55, 0.4, "Task: " .. bot:GetTaskName(), 0, Color(0, 255, 0))
-				debugoverlay.ScreenText( 0.55, 0.42, "Disposition: " .. bot:GetDispositionName(), 0, Color(100, 100, 255))
-			elseif IsValid(bot.FollowerEnt.TargetEnemy) then
-				debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. bot.FollowerEnt.TargetEnemy:Name(), 0, Color(255, 0, 0))
-			end
-			
-			debugoverlay.ScreenText( 0.55, 0.54, "Steady view = " .. "N/A", 0, Color(255, 255, 0))
-			debugoverlay.ScreenText( 0.55, 0.56, "Nearby friends = " .. bot.nearbyFriends, 0, Color(102, 254, 100))
-			debugoverlay.ScreenText( 0.55, 0.58, "Nearby enemies = " .. bot.nearbyEnemies, 0, Color(254, 100, 100))
-			debugoverlay.ScreenText( 0.55, 0.6, "Nav Area: " .. tostring(navmesh.GetNavArea( bot:EyePos(), math.huge )), 0, Color(255, 255, 255))
-		end
-	end
+	--==================== UNUSED STUFF THAT I MIGHT USE ====================
 	
 	--[[
 	--====ABOVE PLAYER====
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), -12, "Name: " .. bot:Name(), 0, Color(255, 255, 255))
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), -10, "Health: " .. bot:Health(), 0, Color(255, 255, 0))
-	if IsValid(bot:GetActiveWeapon()) then
-		debugoverlay.EntityTextAtPosition(bot:EyePos(), -9, "Ammo: " .. bot:GetActiveWeapon():Clip1() .. "/" .. bot:GetAmmoCount(bot:GetActiveWeapon():GetPrimaryAmmoType()) , 0, Color(255, 255, 0))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), -12, "Name: " .. self:Name(), 0, Color(255, 255, 255))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), -10, "Health: " .. self:Health(), 0, Color(255, 255, 0))
+	if IsValid(self:GetActiveWeapon()) then
+		debugoverlay.EntityTextAtPosition(self:EyePos(), -9, "Ammo: " .. self:GetActiveWeapon():Clip1() .. "/" .. self:GetAmmoCount(self:GetActiveWeapon():GetPrimaryAmmoType()) , 0, Color(255, 255, 0))
 	end
 	--====BESIDE PLAYER====
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), -7, "Skill: " .. bot.Skill .. "%", 0, Color(255, 255, 255))
-	if IsValid(bot.FollowerEnt) then
-		debugoverlay.EntityTextAtPosition(bot:EyePos(), -6, "Task: " .. bot.taskName, 0, Color(0, 255, 0))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), -7, "Skill: " .. self.Skill .. "%", 0, Color(255, 255, 255))
+	if IsValid(self.FollowerEnt) then
+		debugoverlay.EntityTextAtPosition(self:EyePos(), -6, "Task: " .. self.taskName, 0, Color(0, 255, 0))
 	end
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), -5, "Disposition: " .. bot.dispositionName, 0, Color(0, 80, 255))
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), -3, "Steady view: " .. "NO", 0, Color(255, 255, 0))
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), -2, "Nearby friends: " .. bot.nearbyFriends, 0, Color(0, 255, 0))
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), -1, "Nearby enemies: " .. bot.nearbyEnemies, 0, Color(255, 50, 50))
-	debugoverlay.EntityTextAtPosition(bot:EyePos(), 0, "Nav Area: " .. tostring(navmesh.GetNavArea( bot:EyePos(), math.huge )), 0, Color(255, 255, 255))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), -5, "Disposition: " .. self.dispositionName, 0, Color(0, 80, 255))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), -3, "Steady view: " .. "NO", 0, Color(255, 255, 0))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), -2, "Nearby friends: " .. self.nearbyFriends, 0, Color(0, 255, 0))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), -1, "Nearby enemies: " .. self.nearbyEnemies, 0, Color(255, 50, 50))
+	debugoverlay.EntityTextAtPosition(self:EyePos(), 0, "Nav Area: " .. tostring(navmesh.GetNavArea( self:EyePos(), math.huge )), 0, Color(255, 255, 255))
 	--=====================
 	]]
+	
+	--==================== CONSOLE COMMAND CHECKS ====================
+	
+	if bot:Team() != TEAM_UNDEAD then
+		if GetConVar( "zs_bot_muscular" ):GetInt() != 0 then
+			bot.BuffMuscular = true
+			bot:DoMuscularBones()
+		end
+		
+		if GetConVar( "zs_bot_force_zombie" ):GetInt() != 0 and bot:Team() != TEAM_UNDEAD then
+			bot:KillSilent()
+			bot:SetTeam(TEAM_UNDEAD)
+			bot:DoHulls(classId, TEAM_UNDEAD)
+			
+			if GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveActive() then
+				bot:UnSpectateAndSpawn()
+			end
+		end
+	end
+	
+	if GetConVar( "zs_bot_infinite_ammo" ):GetInt() != 0 and IsValid(bot:GetActiveWeapon()) then
+		local wep = bot:GetActiveWeapon()
+		
+		if !wep.AmmoIfHas then
+			if wep:GetPrimaryAmmoType() != -1 then
+				bot:SetAmmo(9999, wep:GetPrimaryAmmoType())
+			end
+			if wep:GetSecondaryAmmoType() != -1 then
+				bot:SetAmmo(9999, wep:GetSecondaryAmmoType())
+			end
+		end
+	end
+	
+	--bot.tangoy = Angle ( 0, bot:EyeAngles().y, bot:EyeAngles().z)
+	--debugoverlay.Box( bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25, Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ), Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ), 0, Color( 255, 255, 255 ) )
+		
+	--[[if IsValid( bot.FollowerEnt.TargetLootItem ) then
+		if bot.FollowerEnt.TargetLootItem:GetClass() == "prop_weapon" then
+			print (bot.FollowerEnt.TargetLootItem:GetWeaponType())
+		else
+			print (bot.FollowerEnt.TargetLootItem)
+		end
+	end]]
+	
+	--==================== SOME OTHER CHECKS ====================
+	
+	if IsValid (bot:GetActiveWeapon()) and bot:Team() != TEAM_UNDEAD then
+		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() - 0.05 then
+			bot.reloadHold = true
+		end
+	end
 	
 	-- Switch weapons if got no ammo
 	if bot.Task == GOTO_ARSENAL or bot.Task == WANDER_AROUND or bot.Task == DEFEND_CADE or bot.Task == FOLLOW then
@@ -115,59 +125,6 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
-	if bot:Team() != TEAM_UNDEAD then
-		if GetConVar( "zs_bot_muscular" ):GetInt() != 0 then
-			bot.BuffMuscular = true
-			bot:DoMuscularBones()
-		end
-		
-		if GetConVar( "zs_bot_force_zombie" ):GetInt() != 0 and bot:Team() != TEAM_UNDEAD then
-			bot:KillSilent()
-			bot:SetTeam(TEAM_UNDEAD)
-			bot:DoHulls(classId, TEAM_UNDEAD)
-			
-			if GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveActive() then
-				bot:UnSpectateAndSpawn()
-			end
-		end
-	end
-	
-	if GetConVar( "zs_bot_infinite_ammo" ):GetInt() != 0 and IsValid(bot:GetActiveWeapon()) then
-		local wep = bot:GetActiveWeapon()
-		
-		if !wep.AmmoIfHas then
-			if wep:GetPrimaryAmmoType() != -1 then
-				bot:SetAmmo(9999, wep:GetPrimaryAmmoType())
-			end
-			if wep:GetSecondaryAmmoType() != -1 then
-				bot:SetAmmo(9999, wep:GetSecondaryAmmoType())
-			end
-		end
-	end
-	
-	if IsValid(bot.FollowerEnt.TargetArsenal) then
-		for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
-			debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
-		end
-		
-		for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
-			if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-				debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
-			end
-		end
-	end
-	
-	--bot.tangoy = Angle ( 0, bot:EyeAngles().y, bot:EyeAngles().z)
-	--debugoverlay.Box( bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25, Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ), Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ), 0, Color( 255, 255, 255 ) )
-		
-	--[[if IsValid( bot.FollowerEnt.TargetLootItem ) then
-		if bot.FollowerEnt.TargetLootItem:GetClass() == "prop_weapon" then
-			print (bot.FollowerEnt.TargetLootItem:GetWeaponType())
-		else
-			print (bot.FollowerEnt.TargetLootItem)
-		end
-	end]]
-	
 	if bot.runAwayTimer > 0 then
 		bot.runAwayTimer = bot.runAwayTimer - FrameTime()
 	end
@@ -190,6 +147,8 @@ function controlBots ( bot, cmd )
 		bot.FollowerEnt:Spawn()
 		bot.FollowerEnt.Bot = bot
 	end
+	
+	--==================== SETUP NAVIGATION ====================
 	
 	if bot.FollowerEnt.P then
 		bot.LastPath = bot.FollowerEnt.P:GetAllSegments()
@@ -233,6 +192,8 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
+	--==================== TARGET FINDERS ====================
+	
 	if CurTime() > bot.targetFindDelay then
 		--bot.nearbyFriends = CountNearbyFriends( bot, 3000 )
 		--bot.nearbyEnemies = CountNearbyEnemies( bot, 3000 )
@@ -272,6 +233,8 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
+	--==================== FIND CADING SPOTS ====================
+	
 	if IsValid (bot.FollowerEnt.TargetArsenal) then
 		if CurTime() > bot.targetFindDelay then
 			if bot:Team() != TEAM_UNDEAD then
@@ -291,7 +254,7 @@ function controlBots ( bot, cmd )
 				for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
 					if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
 						--debugoverlay.Box(Vector (0,0,0), navmesh.GetNavArea( spot, 3 ):GetCorner( 0 ), Vector(navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).x, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).y, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).z + 200), 0, Color( 255, 255, 255 ), true )
-				
+						
 						local tr = util.TraceHull( {
 							start = Vector( 0, 0, 0 ),
 							endpos = Vector( 0, 0, 0 ),
@@ -341,11 +304,21 @@ function controlBots ( bot, cmd )
 	
 	--print (#bot.FollowerEnt.TargetArsenal.DefendingSpots)
 	
-	if IsValid (bot:GetActiveWeapon()) and bot:Team() != TEAM_UNDEAD then
-		if bot:GetActiveWeapon():Clip1() <= 0 and !bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() - 0.05 then
-			bot.reloadHold = true
+	if GetConVar( "zs_bot_debug_defending_spots" ):GetInt() == 1 then
+		if IsValid(bot.FollowerEnt.TargetArsenal) then
+			for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
+				debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
+			end
+			
+			for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
+				if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+					debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
+				end
+			end
 		end
 	end
+	
+	--==================== PRESET CHAT MESSAGES ====================
 	
 	if bot.prevSayMessage != bot.sayMessage then
 		bot:Say (bot.sayMessage)
@@ -374,6 +347,8 @@ function controlBots ( bot, cmd )
 		end]]
 	end
 	
+	--==================== BOT HEALING DETECTION ====================
+	
 	--if bot:HasWeapon ("weapon_zs_medicalkit") and bot:Health() <= 70 then
 		--cmd:SetButtons(IN_ATTACK2)
 	--end
@@ -386,7 +361,9 @@ function controlBots ( bot, cmd )
 			bot:SetTask( HEAL_TEAMMATE )
 		end
 	end
-		
+	
+	--==================== BOT TASKS ====================
+	
 	--Task 1
 	--Humans: Go to arsenal
 	--Zombies: Go to humans
@@ -611,7 +588,9 @@ function controlBots ( bot, cmd )
 				end
 				
 				if !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
-					debugoverlay.Box( bot:EyePos() + bot:EyeAngles():Forward() * 35, Vector(-25, -25, -25), Vector(25, 25, 25), 0, Color( 255, 255, 255, 0 ) )
+				
+					if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( bot:EyePos() + bot:EyeAngles():Forward() * 35, Vector(-25, -25, -25), Vector(25, 25, 25), 0, Color( 255, 255, 255, 0 ) ) end
+					
 					local atr = util.TraceHull( {
 						start = bot:EyePos(),
 						endpos = bot:EyePos() + bot:EyeAngles():Forward() * 35,
@@ -736,7 +715,7 @@ function controlBots ( bot, cmd )
 			
 				--print (bot.lookPos)
 				if IsValid (bot:GetActiveWeapon()) then
-					if bot:GetActiveWeapon().MeleeReach != nil then
+					if bot:GetActiveWeapon().MeleeReach != nil and GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then
 						debugoverlay.Line( bot:EyePos(), bot:EyePos() + direction:Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
 						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x - 25, direction.y, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
 						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
@@ -1052,7 +1031,7 @@ function controlBots ( bot, cmd )
 					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
 				end
 				
-				if IsValid (bot:GetActiveWeapon()) then
+				if IsValid (bot:GetActiveWeapon()) and GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then
 					debugoverlay.Line( bot:EyePos(), bot:EyePos() + bot:EyeAngles():Forward() * 65 , 0, Color( 255, 255, 255 ), false )
 					debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(bot:EyeAngles().x - 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * 65 , 0, Color( 255, 255, 255 ), false )
 					debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(bot:EyeAngles().x + 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * 65 , 0, Color( 255, 255, 255 ), false )
@@ -1510,11 +1489,13 @@ function controlBots ( bot, cmd )
 		end
 	end]]
 	
-	--Timer resets DO NOT REMOVE
+	--==================== TIMER RESETS **DO NOT REMOVE** ====================
+	
 	if CurTime() > bot.targetFindDelay then
 		bot.targetFindDelay = CurTime() + 0.5
 	end
-	------------------------------------------------------------------------------------------------
+	
+	--==================== END CHECKS ====================
 	
 	if IsValid(bot.FollowerEnt.TargetEnemy) then
 		if bot.lookAngle == (bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle() then 
@@ -1531,6 +1512,7 @@ hook.Add( "StartCommand", "controlBots", controlBots )
 function botDeath( ply )
 	if !ply.IsZSBot2 then return end
 	
+	--Manually respawn bots because the StartCommand function is disabled when they're dead for some reason
 	if GAMEMODE:GetWave() == 0 then return end
 	if ply:Team() != TEAM_UNDEAD and ply:GetZombieClassTable().Name == "Fresh Dead" then return end
 	
@@ -1552,6 +1534,7 @@ hook.Add( "PlayerDeath","botDeath",botDeath)
 function botDisconnect( ply )
 	if !ply.IsZSBot2 then return end
 	
+	--Remove the bots navigator entity so it doesn't cause errors
 	ply.FollowerEnt:Remove()
 end
 hook.Add( "PlayerDisconnected","botDisconnect",botDisconnect)
@@ -1559,6 +1542,7 @@ hook.Add( "PlayerDisconnected","botDisconnect",botDisconnect)
 function botSpawn( ply )
 	if !ply.IsZSBot2 then return end
 	
+	--Do functions on spawn such as changing class, choosing loadouts, etc
 	ply:DoSpawnStuff( true )
 end
 hook.Add("PlayerSpawn", "botSpawn", botSpawn)

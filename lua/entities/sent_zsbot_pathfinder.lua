@@ -35,7 +35,7 @@ function ENT:ChasePos( options )
 			self:NavCheck()
 		end
 	
-		if GetConVar( "zs_bot_debug" ):GetInt() == 1 then
+		if GetConVar( "zs_bot_debug_path" ):GetInt() == 1 then
 			self.P:Draw()
 		end
 		
