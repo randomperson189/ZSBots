@@ -981,7 +981,7 @@ function controlBots ( bot, cmd )
 					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
 					bot.FollowerEnt:NavCheck()
 					
-					if bot.newPointTimer <= 0 and GetConVar( "zs_bot_debug" ):GetInt() != 0 then 
+					if bot.newPointTimer <= 0 and GetConVar( "zs_bot_debug_path" ):GetInt() != 0 then 
 						print(bot:Name() .. " took too long to get to wander point, going to new one.") 
 						bot:EmitSound( "buttons/button11.wav", 75, 100, 1, CHAN_AUTO )
 					end
