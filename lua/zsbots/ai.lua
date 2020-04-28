@@ -35,6 +35,18 @@ function controlBots ( bot, cmd )
 	debugoverlay.EntityTextAtPosition(self:EyePos(), -1, "Nearby enemies: " .. self.nearbyEnemies, 0, Color(255, 50, 50))
 	debugoverlay.EntityTextAtPosition(self:EyePos(), 0, "Nav Area: " .. tostring(navmesh.GetNavArea( self:EyePos(), math.huge )), 0, Color(255, 255, 255))
 	--=====================
+	
+	
+	bot.tangoy = Angle ( 0, bot:EyeAngles().y, bot:EyeAngles().z)
+	debugoverlay.Box( bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25, Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ), Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ), 0, Color( 255, 255, 255 ) )
+		
+	if IsValid( bot.FollowerEnt.TargetLootItem ) then
+		if bot.FollowerEnt.TargetLootItem:GetClass() == "prop_weapon" then
+			print (bot.FollowerEnt.TargetLootItem:GetWeaponType())
+		else
+			print (bot.FollowerEnt.TargetLootItem)
+		end
+	end
 	]]
 	
 	--==================== CONSOLE COMMAND CHECKS ====================
@@ -68,17 +80,6 @@ function controlBots ( bot, cmd )
 			end
 		end
 	end
-	
-	--bot.tangoy = Angle ( 0, bot:EyeAngles().y, bot:EyeAngles().z)
-	--debugoverlay.Box( bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25, Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ), Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ), 0, Color( 255, 255, 255 ) )
-		
-	--[[if IsValid( bot.FollowerEnt.TargetLootItem ) then
-		if bot.FollowerEnt.TargetLootItem:GetClass() == "prop_weapon" then
-			print (bot.FollowerEnt.TargetLootItem:GetWeaponType())
-		else
-			print (bot.FollowerEnt.TargetLootItem)
-		end
-	end]]
 	
 	--==================== SOME OTHER CHECKS ====================
 	
@@ -648,7 +649,7 @@ function controlBots ( bot, cmd )
 				if bot:GetMoveType() != MOVETYPE_LADDER then
 					direction = bot:EyeAngles()
 				else
-					direction = Angle(-90, bot:EyeAngles().y + 90, bot:EyeAngles().z)
+					direction = Angle(-90, bot:EyeAngles().y, bot:EyeAngles().z)
 				end
 				
 				if bot.lookPos != nil then
@@ -711,14 +712,46 @@ function controlBots ( bot, cmd )
 							bot.lookProp = tr3.Entity
 						end
 					end
+					
+					if bot:GetMoveType() == MOVETYPE_LADDER then
+						local ladtr1 = util.TraceLine( {
+							start = bot:EyePos(),
+							endpos = bot:EyePos() + Angle(direction.x - 25, direction.y, direction.z):Forward() * mr,
+							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+						} )
+						
+						if IsValid(ladtr1.Entity) then
+							if ladtr1.Entity:IsNailed() or ladtr1.Entity:GetClass() == "func_breakable" then
+								bot.lookPos = ladtr1.HitPos
+								bot.lookProp = ladtr1.Entity
+							end
+						end
+						
+						local ladladtr1 = util.TraceLine( {
+							start = bot:EyePos(),
+							endpos = bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * mr,
+							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+						} )
+						
+						if IsValid(ladladtr1.Entity) then
+							if ladtr2.Entity:IsNailed() or ladtr2.Entity:GetClass() == "func_breakable" then
+								bot.lookPos = ladtr2.HitPos
+								bot.lookProp = ladtr2.Entity
+							end
+						end
+					end
 				end
-			
-				--print (bot.lookPos)
+				
 				if IsValid (bot:GetActiveWeapon()) then
 					if bot:GetActiveWeapon().MeleeReach != nil and GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then
 						debugoverlay.Line( bot:EyePos(), bot:EyePos() + direction:Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
 						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x - 25, direction.y, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
 						debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
+						
+						if bot:GetMoveType() == MOVETYPE_LADDER then
+							debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x - 25, direction.y - 90, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
+							debugoverlay.Line( bot:EyePos(), bot:EyePos() + Angle(direction.x + 25, direction.y - 90, direction.z):Forward() * bot:GetActiveWeapon().MeleeReach , 0, Color( 255, 255, 255 ), false )
+						end
 					end
 				end
 			end
