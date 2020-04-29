@@ -795,16 +795,19 @@ function controlBots ( bot, cmd )
 			end]]
 			
 			local myTarget = bot.FollowerEnt.TargetEnemy
+			bot.Disposition = IGNORE_ENEMIES
 			
-			if IsValid (myTarget) then
-				bot.Disposition = IGNORE_ENEMIES
+			if !IsValid (myTarget) or myTarget:Health() <= 0 or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or !bot:GetActiveWeapon().IsMelee or bot:GetActiveWeapon():GetClass() == "weapon_zs_hammer" then
+				bot.crouchHold = false
+				bot:SetTask( GOTO_ARSENAL )
+			end
+			
+			if bot.Task == MELEE_ZOMBIE then
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 				
 					bot:DoLadderMovement( cmd, curgoal )	
 		
 				else
-					
-					
 					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 150 ) then -- was 45
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 						
@@ -824,11 +827,6 @@ function controlBots ( bot, cmd )
 						bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
 					end
 				end
-			end
-			
-			if bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or !bot:GetActiveWeapon().IsMelee or bot:GetActiveWeapon():GetClass() == "weapon_zs_hammer" or !IsValid (myTarget) or myTarget:Health() <= 0 then
-				bot.crouchHold = false
-				bot:SetTask( GOTO_ARSENAL )
 			end
 		
 		elseif bot:GetZombieClassTable().Name != "Crow" then
@@ -876,23 +874,19 @@ function controlBots ( bot, cmd )
 	if bot.Task == HEAL_TEAMMATE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetHealing
+			bot.Disposition = SELF_DEFENSE
 			
 			if bot:HasWeapon("weapon_zs_medicalkit") then
-				
-				bot.Disposition = SELF_DEFENSE
-				
-				if bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit" then
-					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_medicalkit"))
-				end
+				cmd:SelectWeapon (bot:GetWeapon("weapon_zs_medicalkit"))
 				
 				local medWep = bot:GetWeapon("weapon_zs_medicalkit")
 				local medCooldown = (medWep:GetNextCharge() - CurTime())
 				
-				if !IsValid (myTarget) or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or medCooldown > 0 or medWep:GetPrimaryAmmoCount() <= 0 then 
+				if !IsValid( myTarget ) or !IsValid( bot.FollowerEnt.TargetTeammate ) or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or medCooldown > 0 or medWep:GetPrimaryAmmoCount() <= 0 then 
 					bot:SetTask( GOTO_ARSENAL )
 				end
 				
-				if IsValid (myTarget) then
+				if bot.Task == HEAL_TEAMMATE then
 					--[[if myTarget:Health() > (3 / 4 * myTarget:GetMaxHealth()) then --or bot:GetActiveWeapon():GetClass() != "weapon_zs_medicalkit"
 						bot:SetTask( GOTO_ARSENAL )
 					end]]
@@ -935,14 +929,14 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	if bot.Task == PLACE_DEPLOYABLE then
 		if bot:Team() != TEAM_UNDEAD then
+			bot.Disposition = SELF_DEFENSE
 			
-			if !IsValid(bot.FollowerEnt.TargetArsenal) then
+			if !IsValid(bot.FollowerEnt.TargetArsenal) or !IsValid( bot:GetActiveWeapon() ) then
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
-			if IsValid(bot:GetActiveWeapon()) then
+			if bot.Task == PLACE_DEPLOYABLE then
 				local curWep = bot:GetActiveWeapon()
-				bot.Disposition = SELF_DEFENSE
 				
 				if curWep:GetClass() == "weapon_zs_resupplybox" or curWep:GetClass() == "weapon_zs_messagebeacon" then
 					bot.moveType = -1
@@ -951,7 +945,12 @@ function controlBots ( bot, cmd )
 				end
 				
 				if curWep:GetClass() == "weapon_zs_gunturret" or curWep:GetClass() == "weapon_zs_ffemitter" or curWep:GetClass() == "weapon_zs_spotlamp" then
-					if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+					
+					if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
+						bot:SetTask( GOTO_ARSENAL )
+					end
+					
+					if bot.Task == PLACE_DEPLOYABLE then
 						if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetCadingSpot, BIGGER, 125 ) then
 							bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
 							CloseToPointCheck (bot, curgoal.pos, bot.FollowerEnt.TargetCadingSpot, cmd, false)					
@@ -964,13 +963,7 @@ function controlBots ( bot, cmd )
 							bot.deployTimer = true
 						end
 					end
-					
-					if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
-						bot:SetTask( GOTO_ARSENAL )
-					end
 				end
-			else
-				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1052,17 +1045,15 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetNailedProp
 			bot.Disposition = IGNORE_ENEMIES
 			
-			if bot:Health() <= (1.5 / 4 * bot:GetMaxHealth()) then
-				
+			if !IsValid( myTarget ) or bot:Health() <= (1.5 / 4 * bot:GetMaxHealth()) or !bot:HasWeapon("weapon_zs_hammer") then
 				bot.lookPos = nil
 				bot.lookProp = nil
 				bot:SetTask( GOTO_ARSENAL )
 			end
 					
-			if IsValid(myTarget) then
-				if bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" then
-					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
-				end
+			if bot.Task == REPAIR_CADE then
+				
+				cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
 				
 				if IsValid (bot:GetActiveWeapon()) and GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then
 					debugoverlay.Line( bot:EyePos(), bot:EyePos() + bot:EyeAngles():Forward() * 65 , 0, Color( 255, 255, 255 ), false )
@@ -1140,11 +1131,6 @@ function controlBots ( bot, cmd )
 						end
 					end
 				end
-			else
-				
-				bot.lookPos = nil
-				bot.lookProp = nil
-				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1157,7 +1143,13 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetCadingProp
 			bot.Disposition = IGNORE_ENEMIES
 			
-			if IsValid(myTarget) then
+			if !IsValid(myTarget) then
+				bot.useTimer = false
+				bot:SetTask( GOTO_ARSENAL )
+			end
+			
+			if bot.Task == PICKUP_CADING_PROP then
+				
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" then
 					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
 				end
@@ -1189,9 +1181,6 @@ function controlBots ( bot, cmd )
 					bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
 					bot:SetTask( MAKE_CADE )
 				end
-			else
-				bot.useTimer = false
-				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1202,13 +1191,14 @@ function controlBots ( bot, cmd )
 	if bot.Task == MAKE_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
+			bot.Disposition = IGNORE_ENEMIES
 			
-			if !IsValid(bot.heldProp) then
+			if !IsValid(bot.heldProp) or myTarget != nil then
 				bot.sprintHold = false
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
-			if myTarget != nil then
+			if bot.Task == MAKE_CADE then
 				--myTarget = bot.FollowerEnt.TargetArsenal.CadingSpots[1]
 				
 				local oof = bot:GetPos()
@@ -1267,9 +1257,6 @@ function controlBots ( bot, cmd )
 						bot:SetTask( GOTO_ARSENAL )
 					end
 				end
-			else
-				bot.sprintHold = false
-				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1282,13 +1269,16 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetResupply
 			bot.Disposition = IGNORE_ENEMIES
 			
-			if IsValid(myTarget) then
+			if !IsValid(myTarget) then
+				bot:SetTask( GOTO_ARSENAL )
+			end
+			
+			if bot.Task == RESUPPLY_AMMO then
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 					
 					bot:DoLadderMovement( cmd, curgoal )
 					
 				else
-					
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 75 ) then
 							
@@ -1302,11 +1292,9 @@ function controlBots ( bot, cmd )
 						bot:SetTask( GOTO_ARSENAL )
 					end
 				end
-			else
-				bot:SetTask( GOTO_ARSENAL )
+				
+				bot:CheckPropPhasing()
 			end
-			
-			bot:CheckPropPhasing()
 		end
 	end
 	
@@ -1318,13 +1306,13 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetLootItem
 			bot.Disposition = SELF_DEFENSE
 			
-			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 or IsValid(bot.FollowerEnt.TargetEnemy) then
+			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 or !IsValid(myTarget) or IsValid(bot.FollowerEnt.TargetEnemy) then
 				bot.moveType = -1
 				bot.crouchHold = false
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
-			if IsValid(myTarget) then
+			if bot.Task == PICKUP_LOOT then
 				
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 						
@@ -1332,6 +1320,11 @@ function controlBots ( bot, cmd )
 				
 				else
 					
+					if IsValid(bot.FollowerEnt.TargetEnemy) then
+						bot.moveType = -1
+						bot.crouchHold = false
+						bot:SetTask( GOTO_ARSENAL )
+					end
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:LocalToWorld(myTarget:OBBCenter()), BIGGER, 250 ) then
 									
@@ -1355,10 +1348,6 @@ function controlBots ( bot, cmd )
 						bot.crouchHold = true
 					end
 				end
-			else
-				bot.moveType = -1
-				bot.crouchHold = false
-				bot:SetTask( GOTO_ARSENAL )
 			end
 			
 			bot:CheckPropPhasing()
@@ -1373,7 +1362,19 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
 			bot.Disposition = OPPORTUNITY_FIRE
 			
-			if IsValid(bot.FollowerEnt.TargetArsenal) then
+			if !IsValid(bot.FollowerEnt.TargetArsenal) then
+				bot:SetTask( GOTO_ARSENAL )
+			end
+			
+			if IsValid (bot.FollowerEnt.TargetArsenal) then
+				if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
+					bot:SetTask( GOTO_ARSENAL )
+				end
+			else
+				bot:SetTask( GOTO_ARSENAL )
+			end
+			
+			if bot.Task == DEFEND_CADE then
 				if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
 					
 					bot.guardTimer = bot.guardTimer - FrameTime()
@@ -1406,14 +1407,6 @@ function controlBots ( bot, cmd )
 						end
 					end
 				end
-			end
-			
-			if IsValid (bot.FollowerEnt.TargetArsenal) then
-				if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
-					bot:SetTask( GOTO_ARSENAL )
-				end
-			else
-				bot:SetTask( GOTO_ARSENAL )
 			end
 		end
 	end
@@ -1450,8 +1443,16 @@ function controlBots ( bot, cmd )
 	if bot.Task == FOLLOW then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetTeammate
+		
+			if !game.IsObj() and !GAMEMODE.ZombieEscape then
+				bot:SetTask( GOTO_ARSENAL )
+			end
+			if game.IsObj() or GAMEMODE.ZombieEscape then
+				bot.moveType = -1
+				bot.Disposition = ENGAGE_AND_INVESTIGATE
+			end
 			
-			if IsValid (myTarget) then
+			if bot.Task == FOLLOW then
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 				
 					bot:DoLadderMovement( cmd, curgoal )
@@ -1499,14 +1500,6 @@ function controlBots ( bot, cmd )
 						bot.Disposition = OPPORTUNITY_FIRE
 						bot.moveType = -1
 					end
-				end
-			else
-				if !game.IsObj() and !GAMEMODE.ZombieEscape then
-					bot:SetTask( GOTO_ARSENAL )
-				end
-				if game.IsObj() or GAMEMODE.ZombieEscape then
-					bot.moveType = -1
-					bot.Disposition = ENGAGE_AND_INVESTIGATE
 				end
 			end
 		end

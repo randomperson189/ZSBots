@@ -182,6 +182,23 @@ function vecmeta:QuickDistanceCheck( otherVector, checkType, dist )
 	return nil
 end
 
+function plymeta:BreakableCheck() --Hold the attack button when a func_breakable is infront of them
+	if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( ply:EyePos() + ply:EyeAngles():Forward() * 35, Vector(-25, -25, -25), Vector(25, 25, 25), 0, Color( 255, 255, 255, 0 ) ) end
+					
+	local atr = util.TraceHull( {
+		start = ply:EyePos(),
+		endpos = ply:EyePos() + ply:EyeAngles():Forward() * 35,
+		mins = Vector(-25, -25, -25),
+		maxs = Vector(25, 25, 25),
+		ignoreworld = true,
+		filter = function( ent ) if ( ent:GetClass() == "func_breakable" ) then return true end end
+	} )
+	
+	if IsValid(atr.Entity) then
+		ply.attackTimer = true
+	end
+end
+
 function plymeta:SetBotControlling( b )
 	if self:IsBot() then return end
 	
@@ -1781,6 +1798,8 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 			lookAtPoint = false
 		end
 	end
+	
+	bot:BreakableCheck()
 	
 	if crouchJump then
 	
