@@ -727,13 +727,13 @@ function controlBots ( bot, cmd )
 							end
 						end
 						
-						local ladladtr1 = util.TraceLine( {
+						local ladtr2 = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * mr,
 							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
 						} )
 						
-						if IsValid(ladladtr1.Entity) then
+						if IsValid(ladtr2.Entity) then
 							if ladtr2.Entity:IsNailed() or ladtr2.Entity:GetClass() == "func_breakable" then
 								bot.lookPos = ladtr2.HitPos
 								bot.lookProp = ladtr2.Entity
