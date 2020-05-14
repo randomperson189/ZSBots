@@ -1362,6 +1362,7 @@ function plymeta:SetBotValues()
 	self.guardTimer = math.random( 5, 10 )
 	self.runAwayTimer = 0
 	self.newPointTimer = 15
+	self.giveUpTimer = 0
 	--self.lookAroundTimer = 0
 	--self.rotationTimer = 0
 	
@@ -1602,7 +1603,10 @@ function plymeta:RerollBotClass ()
 end
 
 function plymeta:LootCheck()
-	if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 and IsValid( self.FollowerEnt.TargetLootItem ) and !IsValid( self.FollowerEnt.TargetEnemy ) then
+	
+	if self.giveUpTimer > 0 then self.giveUpTimer = self.giveUpTimer - FrameTime() end
+	
+	if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 and IsValid( self.FollowerEnt.TargetLootItem ) and !IsValid( self.FollowerEnt.TargetEnemy ) and self.giveUpTimer <= 0 then
 		local lootTrace = util.TraceLine( {
 			start = self:EyePos(),
 			endpos = self.FollowerEnt.TargetLootItem:LocalToWorld(self.FollowerEnt.TargetLootItem:OBBCenter()),
@@ -1614,6 +1618,7 @@ function plymeta:LootCheck()
 		
 		--if IsValid (self.FollowerEnt.TargetEnemy) then
 			if !lootTrace.Hit then
+				self.giveUpTimer = math.Rand(5, 7)
 				self:SetTask( PICKUP_LOOT )
 			end
 		--[[else
@@ -1882,6 +1887,7 @@ function plymeta:DoSpawnStuff( changeClass )
 	self.moveType = -1
 	self.newPointTimer = 15
 	self.runAwayTimer = 0
+	self.giveUpTimer = 0
 	
 	if self:Team() != TEAM_UNDEAD then
 		timer.Simple(0, function()

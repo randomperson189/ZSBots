@@ -1,6 +1,6 @@
 function controlBots ( bot, cmd )
 	if !bot.IsZSBot2 then return end
-	
+	print(bot.giveUpTimer)
 	--==================== START FUNCTIONS ====================
 	
 	cmd:ClearMovement()
@@ -1306,14 +1306,26 @@ function controlBots ( bot, cmd )
 			local myTarget = bot.FollowerEnt.TargetLootItem
 			bot.Disposition = SELF_DEFENSE
 			
+			if bot.giveUpTimer > 0 then bot.giveUpTimer = bot.giveUpTimer - FrameTime() end
+			
+			if bot.giveUpTimer <= 0 then
+				bot.moveType = -1
+				bot.crouchHold = false
+				bot.giveUpTimer = math.Rand(10, 15)
+				
+				bot:SetTask( GOTO_ARSENAL )
+			end
+			
 			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 or !IsValid(myTarget) or IsValid(bot.FollowerEnt.TargetEnemy) then
 				bot.moveType = -1
 				bot.crouchHold = false
+				bot.giveUpTimer = 0
+				
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
 			if bot.Task == PICKUP_LOOT then
-				
+			
 				if bot:GetMoveType() == MOVETYPE_LADDER then
 						
 					bot:DoLadderMovement( cmd, curgoal )
