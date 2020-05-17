@@ -1,6 +1,6 @@
 function controlBots ( bot, cmd )
 	if !bot.IsZSBot2 then return end
-	print(bot.giveUpTimer)
+	--print(bot.giveUpTimer)
 	--==================== START FUNCTIONS ====================
 	
 	cmd:ClearMovement()
