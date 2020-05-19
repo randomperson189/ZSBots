@@ -236,84 +236,17 @@ function controlBots ( bot, cmd )
 	
 	--==================== FIND CADING SPOTS ====================
 	
-	if IsValid (bot.FollowerEnt.TargetArsenal) then
-		if CurTime() > bot.targetFindDelay then
-			if bot:Team() != TEAM_UNDEAD then
-				
-				bot.FollowerEnt.TargetArsenal:FindCadingSpots(navmesh.GetNearestNavArea( bot.FollowerEnt.TargetArsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ))
-				
-				timer.Simple( 0, function ()
-					if !IsValid( bot ) or !IsValid(bot.FollowerEnt.TargetArsenal) then return end
-					
-					if bot.FollowerEnt.TargetArsenal.UnCheckableAreas[1] != nil then
-						table.Empty(bot.FollowerEnt.TargetArsenal.UnCheckableAreas)
-					end
-					
-					table.insert( bot.FollowerEnt.TargetArsenal.UnCheckableAreas, navmesh.GetNearestNavArea( bot.FollowerEnt.TargetArsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ) )
-				end )
+	if GetConVar( "zs_bot_debug_defending_spots" ):GetInt() == 1 then
+		if IsValid(bot.FollowerEnt.TargetArsenal) then
+			if bot.FollowerEnt.TargetArsenal.UnCheckableAreas != nil then
+				for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
+					debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
+				end
 				
 				for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
 					if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-						--debugoverlay.Box(Vector (0,0,0), navmesh.GetNavArea( spot, 3 ):GetCorner( 0 ), Vector(navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).x, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).y, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).z + 200), 0, Color( 255, 255, 255 ), true )
-						
-						local tr = util.TraceHull( {
-							start = Vector( 0, 0, 0 ),
-							endpos = Vector( 0, 0, 0 ),
-							mins = navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ),
-							maxs = Vector(navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).x, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).y, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).z + 200),
-							ignoreworld = true,
-							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
-						} )
-						
-						if tr.Entity:IsNailed()  then
-							if table.HasValue(bot.FollowerEnt.TargetArsenal.CadingSpots, spot) then
-								table.remove (bot.FollowerEnt.TargetArsenal.CadingSpots, table.KeyFromValue(bot.FollowerEnt.TargetArsenal.DefendingSpots, spot))
-							end
-						else
-							if !table.HasValue(bot.FollowerEnt.TargetArsenal.CadingSpots, spot) then
-								table.insert (bot.FollowerEnt.TargetArsenal.CadingSpots, spot)
-							end
-						end
+						debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
 					end
-				end
-				--PrintTable (bot.CadingSpots)
-			end
-		end
-	end --[[else
-		if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-			table.Empty(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-		end
-		if bot.CadingSpots[1] != nil then
-			table.Empty(bot.CadingSpots)
-		end
-		if bot.FollowerEnt.TargetArsenal.UnCheckableAreas[1] != nil then
-			table.Empty(bot.FollowerEnt.TargetArsenal.UnCheckableAreas)
-		end
-	end
-	
-	if bot:Team() == TEAM_UNDEAD then
-		if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-			table.Empty(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-		end
-		if bot.CadingSpots[1] != nil then
-			table.Empty(bot.CadingSpots)
-		end
-		if bot.FollowerEnt.TargetArsenal.UnCheckableAreas[1] != nil then
-			table.Empty(bot.FollowerEnt.TargetArsenal.UnCheckableAreas)
-		end
-	end]]
-	
-	--print (#bot.FollowerEnt.TargetArsenal.DefendingSpots)
-	
-	if GetConVar( "zs_bot_debug_defending_spots" ):GetInt() == 1 then
-		if IsValid(bot.FollowerEnt.TargetArsenal) then
-			for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
-				debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
-			end
-			
-			for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
-				if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-					debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
 				end
 			end
 		end

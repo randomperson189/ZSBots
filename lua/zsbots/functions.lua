@@ -48,6 +48,51 @@ if not entmeta then return end
 local vecmeta = FindMetaTable("Vector")
 if not vecmeta then return end
 
+timer.Create("CadingSpotsFinder43857", 3, 0, function()
+	for i, arsenal in ipairs(ents.FindByClass("prop_arsenalcrate")) do
+		
+		arsenal:FindCadingSpots(navmesh.GetNearestNavArea( arsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ))
+		
+		timer.Simple( 0, function ()
+			if !IsValid( bot ) or !IsValid(arsenal) then return end
+			
+			if arsenal.UnCheckableAreas[1] != nil then
+				table.Empty(arsenal.UnCheckableAreas)
+			end
+			
+			table.insert( arsenal.UnCheckableAreas, navmesh.GetNearestNavArea( arsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ) )
+		end )
+		
+		--Disabled this function cuz it likely decreases performance and I've got a better way to do it
+		
+		--[[for s, spot in ipairs(arsenal.DefendingSpots) do
+			if arsenal.DefendingSpots[1] != nil then
+				--debugoverlay.Box(Vector (0,0,0), navmesh.GetNavArea( spot, 3 ):GetCorner( 0 ), Vector(navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).x, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).y, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).z + 200), 0, Color( 255, 255, 255 ), true )
+				
+				local tr = util.TraceHull( {
+					start = Vector( 0, 0, 0 ),
+					endpos = Vector( 0, 0, 0 ),
+					mins = navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ),
+					maxs = Vector(navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).x, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).y, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).z + 200),
+					ignoreworld = true,
+					filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
+				} )
+				
+				if tr.Entity:IsNailed()  then
+					if table.HasValue(arsenal.CadingSpots, spot) then
+						table.remove (arsenal.CadingSpots, table.KeyFromValue(arsenal.DefendingSpots, spot))
+					end
+				else
+					if !table.HasValue(arsenal.CadingSpots, spot) then
+						table.insert (arsenal.CadingSpots, spot)
+					end
+				end
+			end
+		end]]
+		--PrintTable (bot.CadingSpots)
+	end
+end)
+
 function plymeta:DoSpectateDebugUI()
 	if GetConVar( "zs_bot_debug_spectator" ):GetInt() == 0 then return end
 
@@ -1260,7 +1305,7 @@ function entmeta:FindCadingSpots( centerArea )
 	local westConnectedAreas = centerArea:GetAdjacentAreasAtSide(3)
 	
 	--PrintTable (self.UnCheckableAreas)
-	print ("Checking around " .. tostring(centerArea) .. " for cading spots")
+	print ("Checking around " .. tostring(centerArea) .. " for cading spots.")
 	
 	if !table.HasValue( self.UnCheckableAreas, centerArea ) then
 		table.insert( self.UnCheckableAreas, centerArea )
