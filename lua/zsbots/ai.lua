@@ -316,7 +316,7 @@ function controlBots ( bot, cmd )
 							start = bot:EyePos(),
 							endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
 							mask = MASK_SHOT,
-							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 						} )
 						
 						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
@@ -480,7 +480,7 @@ function controlBots ( bot, cmd )
 				local tr = util.TraceLine( {
 					start = bot:EyePos(),
 					endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
-					filter = function( ent ) if ( ent != myTarget and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+					filter = function( ent ) if ( ent != myTarget and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 				} )
 				
 				if !GAMEMODE:GetWaveActive() then
@@ -531,7 +531,7 @@ function controlBots ( bot, cmd )
 						mins = Vector(-25, -25, -25),
 						maxs = Vector(25, 25, 25),
 						ignoreworld = true,
-						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" or ent:GetClass() == "func_door_rotating" ) then return true end end
+						filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") or string.find(ent:GetClass(), "func_breakable") or ent:GetClass() == "func_door_rotating" ) then return true end end
 					} )
 					
 					if IsValid(atr.Entity) then
@@ -593,12 +593,12 @@ function controlBots ( bot, cmd )
 					bot.attackTimer = true
 					
 					if IsValid(bot.lookProp) then
-						if bot.lookProp:GetClass() == "prop_physics" or bot.lookProp:GetClass() == "prop_physics_multiplayer" then
+						if string.find(bot.lookProp:GetClass(), "prop_physics") then
 							if bot:EyePos():QuickDistanceCheck( bot.lookPos, BIGGER, (mr + 10) ) or !bot.lookProp:IsNailed() then
 								bot.lookPos = nil
 							end
 						end
-						if bot.lookProp:GetClass() == "func_breakable" then
+						if string.find(bot.lookProp:GetClass(), "func_breakable") then
 							if bot:EyePos():QuickDistanceCheck( bot.lookPos, BIGGER, (mr + 10) ) then
 								bot.lookPos = nil
 							end
@@ -610,11 +610,11 @@ function controlBots ( bot, cmd )
 					local tr = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot:EyePos() + direction:Forward() * mr,
-						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+						filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") or string.find(ent:GetClass(), "func_breakable") ) then return true end end
 					} )
 					
 					if IsValid(tr.Entity) then
-						if tr.Entity:IsNailed() or tr.Entity:GetClass() == "func_breakable" then
+						if tr.Entity:IsNailed() or string.find(tr.Entity:GetClass(), "func_breakable") then
 							bot.lookPos = tr.HitPos
 							bot.lookProp = tr.Entity
 						end
@@ -623,11 +623,11 @@ function controlBots ( bot, cmd )
 					local tr2 = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot:EyePos() + Angle(direction.x - 25, direction.y, direction.z):Forward() * mr,
-						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+						filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") or string.find(ent:GetClass(), "func_breakable") ) then return true end end
 					} )
 					
 					if IsValid(tr2.Entity) then
-						if tr2.Entity:IsNailed() or tr2.Entity:GetClass() == "func_breakable" then
+						if tr2.Entity:IsNailed() or string.find(tr2.Entity:GetClass(), "func_breakable") then
 							bot.lookPos = tr2.HitPos
 							bot.lookProp = tr2.Entity
 						end
@@ -636,11 +636,11 @@ function controlBots ( bot, cmd )
 					local tr3 = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * mr,
-						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+						filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") or string.find(ent:GetClass(), "func_breakable") ) then return true end end
 					} )
 					
 					if IsValid(tr3.Entity) then
-						if tr3.Entity:IsNailed() or tr3.Entity:GetClass() == "func_breakable" then
+						if tr3.Entity:IsNailed() or string.find(tr3.Entity:GetClass(), "func_breakable") then
 							bot.lookPos = tr3.HitPos
 							bot.lookProp = tr3.Entity
 						end
@@ -650,11 +650,11 @@ function controlBots ( bot, cmd )
 						local ladtr1 = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot:EyePos() + Angle(direction.x - 25, direction.y, direction.z):Forward() * mr,
-							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+							filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") or string.find(ent:GetClass(), "func_breakable") ) then return true end end
 						} )
 						
 						if IsValid(ladtr1.Entity) then
-							if ladtr1.Entity:IsNailed() or ladtr1.Entity:GetClass() == "func_breakable" then
+							if ladtr1.Entity:IsNailed() or string.find(ladtr1.Entity:GetClass(), "func_breakable") then
 								bot.lookPos = ladtr1.HitPos
 								bot.lookProp = ladtr1.Entity
 							end
@@ -663,11 +663,11 @@ function controlBots ( bot, cmd )
 						local ladtr2 = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot:EyePos() + Angle(direction.x + 25, direction.y, direction.z):Forward() * mr,
-							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" or ent:GetClass() == "func_breakable" ) then return true end end
+							filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") or string.find(ent:GetClass(), "func_breakable") ) then return true end end
 						} )
 						
 						if IsValid(ladtr2.Entity) then
-							if ladtr2.Entity:IsNailed() or ladtr2.Entity:GetClass() == "func_breakable" then
+							if ladtr2.Entity:IsNailed() or string.find(ladtr2.Entity:GetClass(), "func_breakable") then
 								bot.lookPos = ladtr2.HitPos
 								bot.lookProp = ladtr2.Entity
 							end
@@ -773,7 +773,7 @@ function controlBots ( bot, cmd )
 				local tr = util.TraceLine( {
 					start = bot:EyePos(),
 					endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
-					filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+					filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 				} )
 				
 				if !tr.Hit then
@@ -953,7 +953,7 @@ function controlBots ( bot, cmd )
 						start = bot:EyePos(),
 						endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
 						mask = MASK_SHOT,
-						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 					} )
 					
 					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then					
@@ -1034,7 +1034,7 @@ function controlBots ( bot, cmd )
 					local tr = util.TraceLine( {
 						start = bot:EyePos(),
 						endpos = bot:EyePos() + bot:EyeAngles():Forward() * mr,
-						filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
+						filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") ) then return true end end
 					} )
 					
 					if tr.Entity == myTarget then
@@ -1044,7 +1044,7 @@ function controlBots ( bot, cmd )
 						local tr2 = util.TraceLine( {
 							start = bot:EyePos(),
 							endpos = bot:EyePos() + Angle(bot:EyeAngles().x - 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
-							filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
+							filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") ) then return true end end
 						} )
 		
 						if tr2.Entity == myTarget then
@@ -1054,7 +1054,7 @@ function controlBots ( bot, cmd )
 							local tr3 = util.TraceLine( {
 								start = bot:EyePos(),
 								endpos = bot:EyePos() + Angle(bot:EyeAngles().x + 25, bot:EyeAngles().y, bot:EyeAngles().z):Forward() * mr,
-								filter = function( ent ) if ( ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_physics_multiplayer" ) then return true end end
+								filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") ) then return true end end
 							} )
 		
 							if tr3.Entity == myTarget then
@@ -1416,7 +1416,7 @@ function controlBots ( bot, cmd )
 								start = bot:EyePos(),
 								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
 								mask = MASK_SHOT,
-								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and ent:GetClass() != "prop_physics" and ent:GetClass() != "prop_physics_multiplayer" and ent:GetClass() != "func_breakable" ) then return true end end
+								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 							} )
 							
 							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
