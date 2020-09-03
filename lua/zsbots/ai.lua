@@ -696,12 +696,11 @@ function controlBots ( bot, cmd )
 		if bot:GetZombieClassTable().Name == "Crow" then
 			bot.moveType = -1
 		end
-	end
 	
 	--Task 2
 	--Humans: Hit zombies with melee weapon
 	--Zombies: Go to hiding spot
-	if bot.Task == MELEE_ZOMBIE then
+	elseif bot.Task == MELEE_ZOMBIE then
 		if bot:Team() != TEAM_UNDEAD then
 			--[[if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 500 ) then
 				cmd:SetForwardMove( 1000 )
@@ -799,12 +798,11 @@ function controlBots ( bot, cmd )
 				end
 			end
 		end
-	end
 	
 	--Task 3
 	--Humans: Go to teammate and heal them
 	--Zombies: (Shade) Pickup props and throw them at humans
-	if bot.Task == HEAL_TEAMMATE then
+	elseif bot.Task == HEAL_TEAMMATE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetHealing
 			bot.Disposition = SELF_DEFENSE
@@ -855,12 +853,12 @@ function controlBots ( bot, cmd )
 		else
 			--Put Shade AI here
 		end
-	end
+	
 	
 	--Task 4
 	--Humans: Place deployable
 	--Zombies: ...
-	if bot.Task == PLACE_DEPLOYABLE then
+	elseif bot.Task == PLACE_DEPLOYABLE then
 		if bot:Team() != TEAM_UNDEAD then
 			bot.Disposition = SELF_DEFENSE
 			
@@ -899,12 +897,12 @@ function controlBots ( bot, cmd )
 				end
 			end
 		end
-	end
+	
 	
 	--Task 5
 	--Humans: Wander around
 	--Zombies: ...
-	if bot.Task == WANDER_AROUND then
+	elseif bot.Task == WANDER_AROUND then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
@@ -968,12 +966,11 @@ function controlBots ( bot, cmd )
 			bot:RunAwayCheck( cmd )
 			bot:CheckPropPhasing()
 		end
-	end
 	
 	--Task 6
 	--Humans: Repair cades
 	--Zombies: ...
-	if bot.Task == REPAIR_CADE then
+	elseif bot.Task == REPAIR_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetNailedProp
 			bot.Disposition = IGNORE_ENEMIES
@@ -1066,12 +1063,11 @@ function controlBots ( bot, cmd )
 				end
 			end
 		end
-	end
 	
 	--Task 7
 	--Humans: Pick up prop for cading
 	--Zombies: ...
-	if bot.Task == PICKUP_CADING_PROP then
+	elseif bot.Task == PICKUP_CADING_PROP then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingProp
 			bot.Disposition = IGNORE_ENEMIES
@@ -1116,12 +1112,12 @@ function controlBots ( bot, cmd )
 				end
 			end
 		end
-	end
+	
 	
 	--Task 8
 	--Humans: Cade at cading spots
 	--Zombies: ...
-	if bot.Task == MAKE_CADE then
+	elseif bot.Task == MAKE_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
 			bot.Disposition = IGNORE_ENEMIES
@@ -1192,12 +1188,12 @@ function controlBots ( bot, cmd )
 				end
 			end
 		end
-	end
+	
 	
 	--Task 9
 	--Humans: Get ammo from resupply box / pack resupply box
 	--Zombies: ...
-	if bot.Task == RESUPPLY_AMMO then
+	elseif bot.Task == RESUPPLY_AMMO then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetResupply
 			bot.Disposition = IGNORE_ENEMIES
@@ -1229,12 +1225,12 @@ function controlBots ( bot, cmd )
 				bot:CheckPropPhasing()
 			end
 		end
-	end
+	
 	
 	--Task 10
 	--Humans: Pick up loot
 	--Zombies: ...
-	if bot.Task == PICKUP_LOOT then
+	elseif bot.Task == PICKUP_LOOT then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetLootItem
 			bot.Disposition = SELF_DEFENSE
@@ -1297,12 +1293,12 @@ function controlBots ( bot, cmd )
 			
 			bot:CheckPropPhasing()
 		end
-	end
+	
 	
 	--Task 11
 	--Humans: Defend at defending spot
 	--Zombies: ...
-	if bot.Task == DEFEND_CADE then
+	elseif bot.Task == DEFEND_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetCadingSpot
 			bot.Disposition = OPPORTUNITY_FIRE
@@ -1354,12 +1350,12 @@ function controlBots ( bot, cmd )
 				end
 			end
 		end
-	end
+	
 	
 	--Task 12
 	--Humans: Snipe zombies
 	--Zombies: ...
-	if bot.Task == SNIPING then
+	elseif bot.Task == SNIPING then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetPosition
 			
@@ -1380,12 +1376,12 @@ function controlBots ( bot, cmd )
 				bot.Disposition = OPPORTUNITY_FIRE
 			end
 		end
-	end
+	
 	
 	--Task 13
 	--Humans: Follow
 	--Zombies: ...
-	if bot.Task == FOLLOW then
+	elseif bot.Task == FOLLOW then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.FollowerEnt.TargetTeammate
 		

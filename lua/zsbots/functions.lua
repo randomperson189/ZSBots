@@ -62,34 +62,6 @@ timer.Create("CadingSpotsFinder", 3, 0, function()
 			
 			table.insert( arsenal.UnCheckableAreas, navmesh.GetNearestNavArea( arsenal:GetPos(), false, 99999999999, false, false, TEAM_ANY ) )
 		end )
-		
-		--Disabled this function cuz it likely decreases performance and I've got a better way to do it
-		
-		--[[for s, spot in ipairs(arsenal.DefendingSpots) do
-			if arsenal.DefendingSpots[1] != nil then
-				--debugoverlay.Box(Vector (0,0,0), navmesh.GetNavArea( spot, 3 ):GetCorner( 0 ), Vector(navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).x, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).y, navmesh.GetNavArea( spot, 3 ):GetCorner( 2 ).z + 200), 0, Color( 255, 255, 255 ), true )
-				
-				local tr = util.TraceHull( {
-					start = Vector( 0, 0, 0 ),
-					endpos = Vector( 0, 0, 0 ),
-					mins = navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ),
-					maxs = Vector(navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).x, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).y, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ).z + 200),
-					ignoreworld = true,
-					filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") ) then return true end end
-				} )
-				
-				if tr.Entity:IsNailed()  then
-					if table.HasValue(arsenal.CadingSpots, spot) then
-						table.remove (arsenal.CadingSpots, table.KeyFromValue(arsenal.DefendingSpots, spot))
-					end
-				else
-					if !table.HasValue(arsenal.CadingSpots, spot) then
-						table.insert (arsenal.CadingSpots, spot)
-					end
-				end
-			end
-		end]]
-		--PrintTable (bot.CadingSpots)
 	end
 end)
 
@@ -721,24 +693,6 @@ function SayPresetMessage(bot, category, teamOnly)
 	end
 end
 
---[[NavAreas = navmesh:GetAllNavAreas()
-AttributedAreas = {  }
-
-timer.Create( "mah timer", 1, 0, function() 
-	PrintTable (AttributedAreas)
-	for i, area in ipairs(NavAreas) do
-		if area:HasAttributes(NAV_MESH_JUMP) or area:HasAttributes(NAV_MESH_CROUCH) then
-			if !table.HasValue(AttributedAreas, area) then
-				table.insert(AttributedAreas, area)
-			end
-		end
-		
-		if !area:HasAttributes(NAV_MESH_JUMP) and !area:HasAttributes(NAV_MESH_CROUCH) then
-			table.RemoveByValue(AttributedAreas, area)
-		end
-	end
-end )]]
-
 function plymeta:LookatPosXY( cmd, pos, forward )
 	if forward == nil then forward = false end
 	local theAngle = nil
@@ -795,28 +749,6 @@ function CountNearbyFriends( thisEnt, radius )
 			
 			if !tr.Hit then
 				table.insert(tbl, friend)
-			end
-		end
-	end
-	
-	return #tbl
-end
-
-function CountNearbyEnemies( thisEnt, radius )
-	local tbl = {  }
-	
-	for i, enemy in ipairs( ents.FindInSphere(thisEnt:EyePos(), radius) ) do
-		if enemy:IsPlayer() and enemy:Team() != thisEnt:Team() and enemy:Alive() and enemy != thisEnt then
-			
-			local tr = util.TraceLine( {
-				start = thisEnt:EyePos(),
-				endpos = thisEnt:AimPoint( enemy ),
-				mask = MASK_SHOT,
-				filter = function( ent ) if ( !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
-			} )
-			
-			if !tr.Hit then
-				table.insert(tbl, enemy)
 			end
 		end
 	end
@@ -1215,82 +1147,7 @@ function CheckNavMeshAttributes( bot, cmd )
 	if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_JUMP then
 		bot.cJumpTimer = true
 	end
-	
-	--[[local obbPosSE = LocalToWorld(bot:OBBMins(), Angle(0,0,0), bot:GetPos(), Angle(0,0,0))
-	local obbPosNE = LocalToWorld(Vector(-bot:OBBMins().x, bot:OBBMins().y, 0), Angle(0,0,0), bot:GetPos(), Angle(0,0,0))
-	local obbPosSW = LocalToWorld(Vector(bot:OBBMins().x, -bot:OBBMins().y, 0), Angle(0,0,0), bot:GetPos(), Angle(0,0,0))
-	local obbPosNW = LocalToWorld(Vector(-bot:OBBMins().x, -bot:OBBMins().y, 0), Angle(0,0,0), bot:GetPos(), Angle(0,0,0))]]
-	
-	--[[local attributedAreas = {}
-	local area = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY )
-	
-	if area:HasAttributes( NAV_MESH_JUMP ) or area:HasAttributes( NAV_MESH_CROUCH ) then table.insert(attributedAreas, area) end
-	
-	if !area:HasAttributes( NAV_MESH_JUMP ) and !area:HasAttributes( NAV_MESH_CROUCH ) then 
-		for i, daArea in ipairs(area:GetAdjacentAreasAtSide(0)) do
-			if area:HasAttributes( NAV_MESH_JUMP ) or area:HasAttributes( NAV_MESH_CROUCH ) then table.insert(attributedAreas, area) end
-		end
-		for i, daArea in ipairs(area:GetAdjacentAreasAtSide(1)) do
-			if area:HasAttributes( NAV_MESH_JUMP ) or area:HasAttributes( NAV_MESH_CROUCH ) then table.insert(attributedAreas, area) end
-		end
-		for i, daArea in ipairs(area:GetAdjacentAreasAtSide(2)) do
-			if area:HasAttributes( NAV_MESH_JUMP ) or area:HasAttributes( NAV_MESH_CROUCH ) then table.insert(attributedAreas, area) end
-		end
-		for i, daArea in ipairs(area:GetAdjacentAreasAtSide(3)) do
-			if area:HasAttributes( NAV_MESH_JUMP ) or area:HasAttributes( NAV_MESH_CROUCH ) then table.insert(attributedAreas, area) end
-		end
-	end]]
-	
-	--[[for i, area in ipairs( AttributedAreas ) do
-		if obbPosSE.x < area:GetCorner(2).x and obbPosSE.y < area:GetCorner(2).y 
-		-------------------------------------------------------------------------
-		and obbPosSW.x < area:GetCorner(1).x and obbPosSW.y > area:GetCorner(1).y
-		-------------------------------------------------------------------------
-		and obbPosNE.x > area:GetCorner(3).x and obbPosNE.y < area:GetCorner(3).y 
-		-------------------------------------------------------------------------
-		and obbPosNW.x > area:GetCorner(0).x and obbPosNW.y > area:GetCorner(0).y then
-			if area:HasAttributes( NAV_MESH_JUMP ) then
-				bot.cJumpTimer = true
-				break
-			end
-			
-			if area:HasAttributes( NAV_MESH_CROUCH ) then
-				if bot.attackHold then
-					cmd:SetButtons( bit.bor( IN_DUCK, IN_ATTACK ) )
-				elseif bot.jumpHold then
-					cmd:SetButtons( bit.bor( IN_DUCK, IN_JUMP ) )
-				else
-					cmd:SetButtons( IN_DUCK )
-				end
-				break
-			end
-		end
-	end]]
-	
-	--debugoverlay.Sphere( obbPosSE, 2, 0, Color( 255, 0, 0, 0 ), true )
-	--debugoverlay.Sphere( obbPosNE, 2, 0, Color( 255, 0, 0, 0 ), true )
-	--debugoverlay.Sphere( obbPosSW, 2, 0, Color( 255, 0, 0, 0 ), true )
-	--debugoverlay.Sphere( obbPosNW, 2, 0, Color( 255, 0, 0, 0 ), true )
 end
-
---[[local tr = util.TraceHull( {
-	start = Vector( 0, 0, 0 ),
-	endpos = Vector( 0, 0, 0 ),
-	mins = area:GetCorner( 0 ),
-	maxs = Vector(area:GetCorner( 2 ).x, area:GetCorner( 2 ).y, area:GetCorner( 2 ).z + 200),
-	ignoreworld = true,
-	filter = function( ent ) if ( string.find(ent:GetClass(), "prop_physics") ) then return true end end
-} )
-
---debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), Vector(area:GetCorner( 2 ).x, area:GetCorner( 2 ).y, area:GetCorner( 2 ).z + 200), 0, Color( 255, 255, 255 ), true )
-
---print (tr.Entity)
-if !table.HasValue(bot.DefendingSpots, area:GetCenter()) and !tr.Entity:IsNailed() then
-	table.insert (bot.DefendingSpots, area:GetCenter())
-end
-if !table.HasValue(bot.DefendingSpots, area:GetCenter()) and !IsValid( tr.Entity ) then
-	table.insert (bot.DefendingSpots, area:GetCenter())
-end]]
 
 function entmeta:FindCadingSpots( centerArea )
 	if self.UnCheckableAreas == nil then self.UnCheckableAreas = {} end
@@ -1897,30 +1754,6 @@ function plymeta:DoLadderMovement (cmd, curgoal)
 	if self:Team() != TEAM_UNDEAD then self:SetBarricadeGhosting(true) end
 	
 	if self.lookPos == nil then self.exitLadderCheck = true end
-	
-	--[[if self.canGetOffLadderTimer then
-		self.canGetOffLadderTimer = false
-		timer.Simple (5,function() 
-			if !IsValid(self) then return end
-			self.b = false
-			self.useHold = true
-			timer.Simple (0.05,function() 
-				if !IsValid(self) then return end
-				self.useHold = false
-				self.canGetOffLadderTimer = true
-				timer.Simple (0.05,function() 
-					if !IsValid(self) then return end
-					if self:GetMoveType() == MOVETYPE_LADDER then
-						if !IsValid(self) then return end
-						self.jumpHold = true
-						timer.Simple (0.05,function() 
-							self.jumpHold = false
-						end)
-					end
-				end)
-			end)
-		end)
-	end]]
 end
 
 function plymeta:DoSpawnStuff( changeClass )
