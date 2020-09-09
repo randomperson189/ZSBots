@@ -185,6 +185,27 @@ function plymeta:DoSpectateDebugUI()
 	end
 end
 
+function BotWaveActive(active)
+    for i, bot in ipairs(player.GetZSBots()) do
+		if active then
+			if bot:Team() != TEAM_UNDEAD then
+				bot.shouldGoOutside = false
+			else
+				-- do zombie functions
+			end
+		else
+			if bot:Team() != TEAM_UNDEAD then
+				if math.random (1, 2) <= 1 then
+					bot.shouldGoOutside = true
+				end
+			else
+				-- do zombie functions
+			end
+		end
+	end
+end
+hook.Add( "SetWaveActive", "BotWaveActive", BotWaveActive )
+
 function vecmeta:QuickDistanceCheck( otherVector, checkType, dist )
 	if checkType == 1 then
 		return self:DistToSqr(otherVector) > (dist * dist)
@@ -725,7 +746,7 @@ end)]]
 function player.GetZSBots()
 	local zsbots = {  }
 
-	for i, bot in ipairs(player.GetBots()) do
+	for i, bot in ipairs(player.GetAll()) do
 		if bot.IsZSBot2 then
 			table.insert( zsbots, bot )
 		end
@@ -1286,9 +1307,8 @@ function plymeta:SetBotValues()
 	self.strafeType = -1 --0 = left, 1 = right, 2 = back
 	self.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
 	self.shouldGoOutside = false
-	self.canShouldGoOutside = true
 	
-	--UNUSED THINGYS I MIGHT REMOVE XD
+	--UNUSED THINGIES I MIGHT REMOVE XD
 	--[[self.stopVel = 40
 	self.canRaycast = true]]
 	
@@ -1352,127 +1372,6 @@ function plymeta:SetBotValues()
 	self.rotationSpeed = 5
 	self.angle = Angle(0, 0, 0)
 end
-
-concommand.Add( "zs_bot_add", function ( ply, cmd, args, argStr )
-	
-	local canDo = false
-	
-	if !IsValid(ply) then
-		canDo = true
-	end
-	
-	if IsValid(ply) then
-		if ply:IsListenServerHost() then
-			canDo = true
-		end
-	end
-	
-	if canDo then
-		if tonumber (args[1]) == nil then
-			args[1] = 1
-		end
-		
-		for i=1, args[1] do 
-			if args[2] == nil then
-				player.CreateZSBot()
-			else
-				player.CreateZSBot( args[2] )
-			end
-		end
-	end
-end, nil, "zs_bot_add <count> <name> - Adds a bot matching the given criteria." )
-
-concommand.Add( "zs_bot_kick", function ( ply, cmd, args, argStr )
-	
-	local canDo = false
-	
-	if !IsValid(ply) then
-		canDo = true
-	end
-	
-	if IsValid(ply) then
-		if ply:IsListenServerHost() then
-			canDo = true
-		end
-	end
-	
-	if canDo then
-		if argStr == "All" or argStr == "all" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 then
-					bot:Kick()
-				end
-			end
-		end
-		if argStr == "Humans" or argStr == "humans" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 and bot:Team() == 4 then
-					bot:Kick()
-				end
-			end
-		end
-		if argStr == "Zombies" or argStr == "zombies" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 and bot:Team() == TEAM_UNDEAD then
-					bot:Kick()
-				end
-			end
-		end
-		if argStr != "Zombies" and argStr != "zombies" and argStr != "Humans" and argStr != "humans" and argStr != "All" and argStr != "all" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 and bot:Name() == argStr then
-					bot:Kick()
-				end
-			end
-		end
-	end
-end, nil, "zs_bot_kick <name> - Kicks a bot matching the given criteria." )
-	
-concommand.Add( "zs_bot_kill", function ( ply, cmd, args, argStr )
-	
-	local canDo = false
-	
-	if !IsValid(ply) then
-		canDo = true
-	end
-	
-	if IsValid(ply) then
-		if ply:IsListenServerHost() then
-			canDo = true
-		end
-	end
-	
-	if canDo then
-		if argStr == "All" or argStr == "all" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() then
-					bot:Kill()
-				end
-			end
-		end
-		if argStr == "Humans" or argStr == "humans" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Team() == 4 then
-					bot:Kill()
-				end
-			end
-		end
-		if argStr == "Zombies" or argStr == "zombies" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Team() == TEAM_UNDEAD then
-					bot:Kill()
-				end
-			end
-		end
-		if argStr != "Zombies" and argStr != "zombies" and argStr != "Humans" and argStr != "humans" and argStr != "All" and argStr != "all" then
-			for i, bot in ipairs( player.GetAll() ) do
-				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Name() == argStr then
-					bot:Kill()
-				end
-			end
-		end
-	end
-end, nil, "zs_bot_kill <name> - Kills a bot matching the given criteria." )
 
 function plymeta:RerollBotClass ()
 	BotClasses = {

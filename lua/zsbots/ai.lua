@@ -185,14 +185,6 @@ function controlBots ( bot, cmd )
 		end
 	end
 	
-	if GAMEMODE:GetWaveActive() then
-		if IsValid (bot.FollowerEnt.TargetArsenal) then
-			if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetArsenal:GetPos(), BIGGER, 80 ) then
-				bot.canShouldGoOutside = true
-			end
-		end
-	end
-	
 	--==================== TARGET FINDERS ====================
 	
 	if CurTime() > bot.targetFindDelay then
@@ -445,18 +437,7 @@ function controlBots ( bot, cmd )
 							end	
 						end
 						
-						if bot.canShouldGoOutside then
-							if math.random (1, 4) <= 3 then
-								bot.shouldGoOutside = true
-								--print ("I should go outside")
-							else
-								bot.shouldGoOutside = false
-								--print ("I shouldn't go outside")
-							end
-							bot.canShouldGoOutside = false
-						end
-						
-						if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveStart() - 15 > CurTime() and bot.shouldGoOutside then
+						if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveStart() - 20 > CurTime() and bot.shouldGoOutside then
 							bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
 							bot:SetTask( WANDER_AROUND )
 						end

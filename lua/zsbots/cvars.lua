@@ -21,3 +21,124 @@ CreateConVar( "zs_bot_can_chat", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED,
 CreateConVar( "zs_bot_force_zombie", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Force ZSBots to be zombies." )
 
 CreateConVar( "zs_bot_autospawn_count", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "How many ZSBots to spawn at the start." )
+
+concommand.Add( "zs_bot_add", function ( ply, cmd, args, argStr )
+	
+	local canDo = false
+	
+	if !IsValid(ply) then
+		canDo = true
+	end
+	
+	if IsValid(ply) then
+		if ply:IsListenServerHost() then
+			canDo = true
+		end
+	end
+	
+	if canDo then
+		if tonumber (args[1]) == nil then
+			args[1] = 1
+		end
+		
+		for i=1, args[1] do 
+			if args[2] == nil then
+				player.CreateZSBot()
+			else
+				player.CreateZSBot( args[2] )
+			end
+		end
+	end
+end, nil, "zs_bot_add <count> <name> - Adds a bot matching the given criteria." )
+
+concommand.Add( "zs_bot_kick", function ( ply, cmd, args, argStr )
+	
+	local canDo = false
+	
+	if !IsValid(ply) then
+		canDo = true
+	end
+	
+	if IsValid(ply) then
+		if ply:IsListenServerHost() then
+			canDo = true
+		end
+	end
+	
+	if canDo then
+		if argStr == "All" or argStr == "all" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 then
+					bot:Kick()
+				end
+			end
+		end
+		if argStr == "Humans" or argStr == "humans" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 and bot:Team() == 4 then
+					bot:Kick()
+				end
+			end
+		end
+		if argStr == "Zombies" or argStr == "zombies" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 and bot:Team() == TEAM_UNDEAD then
+					bot:Kick()
+				end
+			end
+		end
+		if argStr != "Zombies" and argStr != "zombies" and argStr != "Humans" and argStr != "humans" and argStr != "All" and argStr != "all" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 and bot:Name() == argStr then
+					bot:Kick()
+				end
+			end
+		end
+	end
+end, nil, "zs_bot_kick <name> - Kicks a bot matching the given criteria." )
+	
+concommand.Add( "zs_bot_kill", function ( ply, cmd, args, argStr )
+	
+	local canDo = false
+	
+	if !IsValid(ply) then
+		canDo = true
+	end
+	
+	if IsValid(ply) then
+		if ply:IsListenServerHost() then
+			canDo = true
+		end
+	end
+	
+	if canDo then
+		if argStr == "All" or argStr == "all" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() then
+					bot:Kill()
+				end
+			end
+		end
+		if argStr == "Humans" or argStr == "humans" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Team() == 4 then
+					bot:Kill()
+				end
+			end
+		end
+		if argStr == "Zombies" or argStr == "zombies" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Team() == TEAM_UNDEAD then
+					bot:Kill()
+				end
+			end
+		end
+		if argStr != "Zombies" and argStr != "zombies" and argStr != "Humans" and argStr != "humans" and argStr != "All" and argStr != "all" then
+			for i, bot in ipairs( player.GetAll() ) do
+				if bot:IsBot() and bot.IsZSBot2 and bot:Alive() and bot:Name() == argStr then
+					bot:Kill()
+				end
+			end
+		end
+	end
+end, nil, "zs_bot_kill <name> - Kills a bot matching the given criteria." )
