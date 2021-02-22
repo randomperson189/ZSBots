@@ -35,6 +35,9 @@ BIGGER_OR_EQUAL = 2
 SMALLER = 3
 SMALLER_OR_EQUAL = 4
 
+HAS_AMMO = 1
+HAS_NO_AMMO = 2
+
 defaultLookDistance = 1000
 defaultEscapeLookDistance = math.huge
 defaultRotationSpeed = 5 -- was 10
@@ -221,8 +224,10 @@ function vecmeta:QuickDistanceCheck( otherVector, checkType, dist )
 end
 
 function plymeta:BreakableCheck() --Hold the attack button when a func_breakable is infront of them
+	if !IsValid(ply) then return end
+	
 	if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( ply:EyePos() + ply:EyeAngles():Forward() * 35, Vector(-25, -25, -25), Vector(25, 25, 25), 0, Color( 255, 255, 255, 0 ) ) end
-					
+	
 	local atr = util.TraceHull( {
 		start = ply:EyePos(),
 		endpos = ply:EyePos() + ply:EyeAngles():Forward() * 35,
@@ -1144,15 +1149,31 @@ function MoveToPosition (bot, position, cmd)
 	end
 end
 
-function plymeta:GetOtherWeaponWithAmmo()
+function plymeta:GetOtherWeapon(ammoCheck)
+	if ammoCheck == nil then ammoCheck = 0 end
+	
 	local daWep = nil
 	
 	for i, wep in ipairs(self:GetWeapons()) do 
-		if wep:Clip1() > 0 or self:GetAmmoCount( wep:GetPrimaryAmmoType() ) > 0 then
-			if !wep.IsMelee and !wep.Primary.Heal and !wep.AmmoIfHas and wep:GetPrimaryAmmoType() != -1 then
+		if wep != self:GetActiveWeapon() then
+			if ammoCheck == HAS_AMMO then
+				if wep:Clip1() > 0 or self:GetAmmoCount( wep:GetPrimaryAmmoType() ) > 0 then
+					if !wep.IsMelee and !wep.Primary.Heal and !wep.AmmoIfHas and wep:GetPrimaryAmmoType() != -1 then
+						daWep = wep
+						
+						break
+					end
+				end
+			elseif ammoCheck == HAS_NO_AMMO then
+				if wep:Clip1() <= 0 or self:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 then
+					if !wep.IsMelee and !wep.Primary.Heal and !wep.AmmoIfHas and wep:GetPrimaryAmmoType() != -1 then
+						daWep = wep
+						
+						break
+					end
+				end
+			else
 				daWep = wep
-				
-				break
 			end
 		end
 	end

@@ -94,7 +94,7 @@ function controlBots ( bot, cmd )
 		if bot:Team() != TEAM_UNDEAD and CurTime() > bot.targetFindDelay and bot.runAwayTimer <= 0 then
 			
 			local curWep = bot:GetActiveWeapon()
-			local otherWep = bot:GetOtherWeaponWithAmmo()
+			local otherWep = bot:GetOtherWeapon(HAS_AMMO)
 			
 			if IsValid(curWep) then
 				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee or curWep.Primary.Heal or curWep.AmmoIfHas then	
@@ -311,7 +311,7 @@ function controlBots ( bot, cmd )
 							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 						} )
 						
-						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
+						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeapon(HAS_AMMO)) then
 							bot:SetTask( MELEE_ZOMBIE )
 						end
 					end
@@ -402,7 +402,7 @@ function controlBots ( bot, cmd )
 						
 						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
 							local curWep = bot:GetActiveWeapon()
-							local otherWep = bot:GetOtherWeaponWithAmmo()
+							local otherWep = bot:GetOtherWeapon(HAS_NO_AMMO)
 							
 							if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep:GetPrimaryAmmoType() != -1 and !curWep.IsMelee then
 								if otherWep == nil then
@@ -411,15 +411,9 @@ function controlBots ( bot, cmd )
 							end
 							
 							if curWep.IsMelee then
-								if otherWep == nil then
-									for i, wep in ipairs(bot:GetWeapons()) do
-										if wep:Clip1() <= 0 and bot:GetAmmoCount( wep:GetPrimaryAmmoType() ) <= 0 and wep:GetPrimaryAmmoType() != -1 and !curWep.IsMelee then
-											bot:SelectWeapon(wep)
-											bot:SetTask( RESUPPLY_AMMO )
-											
-											break
-										end
-									end
+								if otherWep != nil then
+									bot:SelectWeapon(otherWep)
+									bot:SetTask( RESUPPLY_AMMO )
 								end
 							end
 						end
@@ -454,7 +448,7 @@ function controlBots ( bot, cmd )
 			end
 			
 		elseif IsValid( bot.FollowerEnt.TargetEnemy ) then
-			local myTarget = bot.FollowerEnt.TargetEnemy
+			local myTarget = bot.erEnt.TargetEnemy
 			
 			if bot:GetZombieClassTable().Name != "Crow" then
 				
@@ -936,7 +930,7 @@ function controlBots ( bot, cmd )
 					} )
 					
 					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then					
-						if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
+						if !tr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeapon(HAS_AMMO)) then
 							bot:SetTask( MELEE_ZOMBIE )
 						end
 					end
@@ -1327,6 +1321,24 @@ function controlBots ( bot, cmd )
 						else
 							bot.moveType = -1
 						end
+						
+						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
+							local curWep = bot:GetActiveWeapon()
+							local otherWep = bot:GetOtherWeapon(HAS_NO_AMMO)
+							
+							if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and curWep:GetPrimaryAmmoType() != -1 and !curWep.IsMelee then
+								if otherWep == nil then
+									bot:SetTask( RESUPPLY_AMMO )
+								end
+							end
+							
+							if curWep.IsMelee then
+								if otherWep != nil then
+									bot:SelectWeapon(otherWep)
+									bot:SetTask( RESUPPLY_AMMO )
+								end
+							end
+						end
 					end
 				end
 			end
@@ -1396,7 +1408,7 @@ function controlBots ( bot, cmd )
 								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 							} )
 							
-							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeaponWithAmmo()) then
+							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeapon(HAS_AMMO)) then
 								bot:SetTask( MELEE_ZOMBIE )
 							end
 						end
