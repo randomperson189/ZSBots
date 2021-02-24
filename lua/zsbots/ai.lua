@@ -448,7 +448,7 @@ function controlBots ( bot, cmd )
 			end
 			
 		elseif IsValid( bot.FollowerEnt.TargetEnemy ) then
-			local myTarget = bot.erEnt.TargetEnemy
+			local myTarget = bot.FollowerEnt.TargetEnemy
 			
 			if bot:GetZombieClassTable().Name != "Crow" then
 				
