@@ -6,7 +6,7 @@ function controlBots ( bot, cmd )
 	cmd:ClearMovement()
 	cmd:ClearButtons()
 	
-	bot:DispositionCheck( cmd, bot.FollowerEnt.TargetEnemy )
+	bot:DispositionCheck( cmd, bot.Pathfinder.TargetEnemy )
 	bot:InputTimers()
 	bot:InputCheck( cmd )
 	
@@ -26,7 +26,7 @@ function controlBots ( bot, cmd )
 	end
 	--====BESIDE PLAYER====
 	debugoverlay.EntityTextAtPosition(self:EyePos(), -7, "Skill: " .. self.Skill .. "%", 0, Color(255, 255, 255))
-	if IsValid(self.FollowerEnt) then
+	if IsValid(self.Pathfinder) then
 		debugoverlay.EntityTextAtPosition(self:EyePos(), -6, "Task: " .. self.taskName, 0, Color(0, 255, 0))
 	end
 	debugoverlay.EntityTextAtPosition(self:EyePos(), -5, "Disposition: " .. self.dispositionName, 0, Color(0, 80, 255))
@@ -40,11 +40,11 @@ function controlBots ( bot, cmd )
 	bot.tangoy = Angle ( 0, bot:EyeAngles().y, bot:EyeAngles().z)
 	debugoverlay.Box( bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25, Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ), Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ), 0, Color( 255, 255, 255 ) )
 		
-	if IsValid( bot.FollowerEnt.TargetLootItem ) then
-		if bot.FollowerEnt.TargetLootItem:GetClass() == "prop_weapon" then
-			print (bot.FollowerEnt.TargetLootItem:GetWeaponType())
+	if IsValid( bot.Pathfinder.TargetLootItem ) then
+		if bot.Pathfinder.TargetLootItem:GetClass() == "prop_weapon" then
+			print (bot.Pathfinder.TargetLootItem:GetWeaponType())
 		else
-			print (bot.FollowerEnt.TargetLootItem)
+			print (bot.Pathfinder.TargetLootItem)
 		end
 	end
 	]]
@@ -143,44 +143,44 @@ function controlBots ( bot, cmd )
 		cmd:SetViewAngles( Angle( lerpAngle.x, lerpAngle.y, 0 ) )
 	end
 	
-	if !IsValid( bot.FollowerEnt ) then
-		bot.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
-		bot.FollowerEnt:Spawn()
-		bot.FollowerEnt.Bot = bot
+	if !IsValid( bot.Pathfinder ) then
+		bot.Pathfinder = ents.Create( "sent_zsbot_pathfinder" )
+		bot.Pathfinder:Spawn()
+		bot.Pathfinder.Bot = bot
 	end
 	
 	--==================== SETUP NAVIGATION ====================
 	
-	if bot.FollowerEnt.P then
-		bot.LastPath = bot.FollowerEnt.P:GetAllSegments()
+	if bot.Pathfinder.P then
+		bot.LastPath = bot.Pathfinder.P:GetAllSegments()
 	end
 	
 	if bot.LastPath then
 		local daPos = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( bot:GetPos() )
-		if bot.FollowerEnt:GetPos() != daPos then
-			bot.FollowerEnt:SetPos( daPos )
+		if bot.Pathfinder:GetPos() != daPos then
+			bot.Pathfinder:SetPos( daPos )
 		end
 	else
-		if bot.FollowerEnt:GetPos() != bot:GetPos() then
-			bot.FollowerEnt:SetPos( bot:GetPos() )
+		if bot.Pathfinder:GetPos() != bot:GetPos() then
+			bot.Pathfinder:SetPos( bot:GetPos() )
 		end
 	end
 	
 	if !bot.LastPath then return end 
 	
-	local curgoal = bot.LastPath[bot.FollowerEnt.CurSegment]
+	local curgoal = bot.LastPath[bot.Pathfinder.CurSegment]
 	if !curgoal then return end
 	
 	if bot:GetMoveType() == MOVETYPE_LADDER then
 		if bot:GetPos():QuickDistanceCheck( curgoal.pos, SMALLER, 20 ) then
-			if bot.LastPath[bot.FollowerEnt.CurSegment + 1] != nil then
-				bot.FollowerEnt.CurSegment = bot.FollowerEnt.CurSegment + 1
+			if bot.LastPath[bot.Pathfinder.CurSegment + 1] != nil then
+				bot.Pathfinder.CurSegment = bot.Pathfinder.CurSegment + 1
 			end
 		end
 	else
 		if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):QuickDistanceCheck( Vector( curgoal.pos.x, curgoal.pos.y, 0 ), SMALLER, 20 ) then
-			if bot.LastPath[bot.FollowerEnt.CurSegment + 1] != nil then
-				bot.FollowerEnt.CurSegment = bot.FollowerEnt.CurSegment + 1
+			if bot.LastPath[bot.Pathfinder.CurSegment + 1] != nil then
+				bot.Pathfinder.CurSegment = bot.Pathfinder.CurSegment + 1
 			end
 		end
 	end
@@ -193,35 +193,35 @@ function controlBots ( bot, cmd )
 		
 		if bot:Team() == TEAM_UNDEAD then
 			--bot.attackProp = FindNearestProp2( bot )
-			bot.FollowerEnt.TargetPosition = FindNearestHidingSpot( bot )
+			bot.Pathfinder.TargetPosition = FindNearestHidingSpot( bot )
 			
 			if ROUNDWINNER != bot:Team() then
 				if bot.Task == HIDE_FROM_HUMANS then
-					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
+					bot.Pathfinder.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
 				elseif AnEnemyIsInSight("player", bot) then
-					bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
+					bot.Pathfinder.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
 				else
-					bot.FollowerEnt.TargetEnemy = FindNearestEnemy( "player", bot )
+					bot.Pathfinder.TargetEnemy = FindNearestEnemy( "player", bot )
 				end
 			else
-				bot.FollowerEnt.TargetEnemy = FindNearestTeammate( "player", bot )
+				bot.Pathfinder.TargetEnemy = FindNearestTeammate( "player", bot )
 			end
 		else
-			bot.FollowerEnt.TargetEnemy = FindNearestEnemyInSight( "player", bot )
-			bot.FollowerEnt.TargetNailedProp = FindNearestNailedProp( bot )
-			bot.FollowerEnt.TargetCadingProp = FindNearestProp( bot )
-			bot.FollowerEnt.TargetLootItem = FindNearestLoot( bot )
-			bot.FollowerEnt.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot )
-			bot.FollowerEnt.TargetResupply = FindNearestEntity( "prop_resupplybox", bot )
+			bot.Pathfinder.TargetEnemy = FindNearestEnemyInSight( "player", bot )
+			bot.Pathfinder.TargetNailedProp = FindNearestNailedProp( bot )
+			bot.Pathfinder.TargetCadingProp = FindNearestProp( bot )
+			bot.Pathfinder.TargetLootItem = FindNearestLoot( bot )
+			bot.Pathfinder.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot )
+			bot.Pathfinder.TargetResupply = FindNearestEntity( "prop_resupplybox", bot )
 			
 			if bot:HasWeapon ("weapon_zs_medicalkit") then
-				bot.FollowerEnt.TargetHealing = FindNearestHealTarget( "player", bot )
+				bot.Pathfinder.TargetHealing = FindNearestHealTarget( "player", bot )
 			end
 			
 			if bot.Task != 13 then
-				bot.FollowerEnt.TargetTeammate = FindNearestTeammate( "player", bot )
+				bot.Pathfinder.TargetTeammate = FindNearestTeammate( "player", bot )
 			else
-				bot.FollowerEnt.TargetTeammate = FindNearestPlayerTeammate( "player", bot )
+				bot.Pathfinder.TargetTeammate = FindNearestPlayerTeammate( "player", bot )
 			end
 		end
 	end
@@ -229,14 +229,14 @@ function controlBots ( bot, cmd )
 	--==================== FIND CADING SPOTS ====================
 	
 	if GetConVar( "zs_bot_debug_defending_spots" ):GetInt() == 1 then
-		if IsValid(bot.FollowerEnt.TargetArsenal) then
-			if bot.FollowerEnt.TargetArsenal.UnCheckableAreas != nil then
-				for i, area in ipairs(bot.FollowerEnt.TargetArsenal.UnCheckableAreas) do
+		if IsValid(bot.Pathfinder.TargetArsenal) then
+			if bot.Pathfinder.TargetArsenal.UnCheckableAreas != nil then
+				for i, area in ipairs(bot.Pathfinder.TargetArsenal.UnCheckableAreas) do
 					debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
 				end
 				
-				for s, spot in ipairs(bot.FollowerEnt.TargetArsenal.DefendingSpots) do
-					if bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+				for s, spot in ipairs(bot.Pathfinder.TargetArsenal.DefendingSpots) do
+					if bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
 						debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
 					end
 				end
@@ -264,9 +264,9 @@ function controlBots ( bot, cmd )
 			bot.prevSay = -1
 		end
 		
-		--[[if IsValid (bot.FollowerEnt.TargetEnemy) then
-			if bot.FollowerEnt.TargetEnemy:Team() == TEAM_UNDEAD then
-				if bot.FollowerEnt.TargetEnemy:GetZombieClassTable().Boss and bot.prevSay == -1 then
+		--[[if IsValid (bot.Pathfinder.TargetEnemy) then
+			if bot.Pathfinder.TargetEnemy:Team() == TEAM_UNDEAD then
+				if bot.Pathfinder.TargetEnemy:GetZombieClassTable().Boss and bot.prevSay == -1 then
 					SayPresetMessage(bot, MSG_BOSS_OUTSIDE, true)
 				end
 			end
@@ -279,11 +279,11 @@ function controlBots ( bot, cmd )
 		--cmd:SetButtons(IN_ATTACK2)
 	--end
 	
-	if IsValid (bot.FollowerEnt.TargetHealing) and bot:HasWeapon("weapon_zs_medicalkit") and bot.Task != HEAL_TEAMMATE then
+	if IsValid (bot.Pathfinder.TargetHealing) and bot:HasWeapon("weapon_zs_medicalkit") and bot.Task != HEAL_TEAMMATE then
 		local medWeapon = bot:GetWeapon("weapon_zs_medicalkit")
 		local medCooldown = medWeapon:GetNextCharge() - CurTime()
 		
-		if --[[bot.FollowerEnt.TargetTeammate:Health() <= (3 / 4 * bot.FollowerEnt.TargetTeammate:GetMaxHealth()) and]] bot:Health() > (2 / 4 * bot:GetMaxHealth()) and medCooldown <= 0 and medWeapon:GetPrimaryAmmoCount() > 0 then
+		if --[[bot.Pathfinder.TargetTeammate:Health() <= (3 / 4 * bot.Pathfinder.TargetTeammate:GetMaxHealth()) and]] bot:Health() > (2 / 4 * bot:GetMaxHealth()) and medCooldown <= 0 and medWeapon:GetPrimaryAmmoCount() > 0 then
 			bot:SetTask( HEAL_TEAMMATE )
 		end
 	end
@@ -300,15 +300,15 @@ function controlBots ( bot, cmd )
 			if ROUNDWINNER == bot:Team() then bot:SetTask( WANDER_AROUND ) end
 			
 			if !game.IsObj() and !GAMEMODE.ZombieEscape and ROUNDWINNER != bot:Team() then
-				local myTarget = bot.FollowerEnt.TargetArsenal
+				local myTarget = bot.Pathfinder.TargetArsenal
 				
-				if IsValid (bot.FollowerEnt.TargetEnemy) then
+				if IsValid (bot.Pathfinder.TargetEnemy) then
 					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then
 						local meleeTrace = util.TraceLine( {
 							start = bot:EyePos(),
-							endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+							endpos = bot:AimPoint( bot.Pathfinder.TargetEnemy ),
 							mask = MASK_SHOT,
-							filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
+							filter = function( ent ) if ( ent != bot.Pathfinder.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 						} )
 						
 						if !meleeTrace.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeapon(HAS_AMMO)) then
@@ -349,15 +349,15 @@ function controlBots ( bot, cmd )
 						bot.Disposition = OPPORTUNITY_FIRE
 						
 						if IsValid( bot:GetActiveWeapon() ) then
-							--print (bot.FollowerEnt.TargetCadingSpot)
-							if !bot:GetActiveWeapon().IsMelee and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+							--print (bot.Pathfinder.TargetCadingSpot)
+							if !bot:GetActiveWeapon().IsMelee and bot.Pathfinder.TargetArsenal.DefendingSpots != nil and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
 								bot.guardTimer = bot.guardTimer - FrameTime()
 								--print (bot.guardTimer)
 						
 								if bot.guardTimer <= 0 then
-									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+									bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
 									bot.guardTimer = math.random( 5, 10 )
-									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+									bot:LookatPosXY( cmd, bot.Pathfinder.TargetCadingSpot )
 									
 									bot:SetTask( DEFEND_CADE )
 								end
@@ -373,25 +373,25 @@ function controlBots ( bot, cmd )
 								bot:SelectWeapon(bot:GetWeapon("weapon_zs_messagebeacon"))
 								bot:SetTask( PLACE_DEPLOYABLE )
 							elseif bot:HasWeapon("weapon_zs_gunturret") then
-								if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+								if IsValid(bot.Pathfinder.TargetArsenal) and bot.Pathfinder.TargetArsenal.DefendingSpots != nil and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
+									bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
+									bot:LookatPosXY( cmd, bot.Pathfinder.TargetCadingSpot )
 									
 									bot:SelectWeapon(bot:GetWeapon("weapon_zs_gunturret"))
 									bot:SetTask( PLACE_DEPLOYABLE )
 								end
 							elseif bot:HasWeapon("weapon_zs_ffemitter") then
-								if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+								if IsValid(bot.Pathfinder.TargetArsenal) and bot.Pathfinder.TargetArsenal.DefendingSpots != nil and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
+									bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
+									bot:LookatPosXY( cmd, bot.Pathfinder.TargetCadingSpot )
 									
 									bot:SelectWeapon(bot:GetWeapon("weapon_zs_ffemitter"))
 									bot:SetTask( PLACE_DEPLOYABLE )
 								end
 							elseif bot:HasWeapon("weapon_zs_spotlamp") then
-								if IsValid(bot.FollowerEnt.TargetArsenal) and bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
-									bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-									bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
+								if IsValid(bot.Pathfinder.TargetArsenal) and bot.Pathfinder.TargetArsenal.DefendingSpots != nil and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
+									bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
+									bot:LookatPosXY( cmd, bot.Pathfinder.TargetCadingSpot )
 									
 									bot:SelectWeapon(bot:GetWeapon("weapon_zs_spotlamp"))
 									bot:SetTask( PLACE_DEPLOYABLE )
@@ -400,7 +400,7 @@ function controlBots ( bot, cmd )
 						end
 						
 						
-						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
+						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.Pathfinder.TargetResupply) and CurTime() > bot.targetFindDelay then
 							local curWep = bot:GetActiveWeapon()
 							local otherWep = bot:GetOtherWeapon(HAS_NO_AMMO)
 							
@@ -418,21 +418,22 @@ function controlBots ( bot, cmd )
 							end
 						end
 							
-						if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 and IsValid(bot.FollowerEnt.TargetArsenal) then
-							if IsValid (bot.FollowerEnt.TargetCadingProp) and bot.BuffMuscular and bot.FollowerEnt.TargetArsenal.CadingSpots[1] != nil then
+						if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 and IsValid(bot.Pathfinder.TargetArsenal) then
+							if IsValid (bot.Pathfinder.TargetCadingProp) and bot.BuffMuscular and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
 								if bot:HasWeapon("weapon_zs_hammer") then
+									bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
 									bot:SetTask( PICKUP_CADING_PROP )
 								end	
 							end
 						end
-						if IsValid (bot.FollowerEnt.TargetNailedProp) and !bot.BuffMuscular then
+						if IsValid (bot.Pathfinder.TargetNailedProp) and !bot.BuffMuscular then
 							if bot:HasWeapon("weapon_zs_hammer") and bot:Health() > (1.5 / 4 * bot:GetMaxHealth()) then
 								bot:SetTask( REPAIR_CADE )
 							end	
 						end
 						
 						if bot:Health() > (3 / 4 * bot:GetMaxHealth()) and !GAMEMODE:GetWaveActive() and GAMEMODE:GetWave() != 0 and GAMEMODE:GetWaveStart() - 20 > CurTime() and bot.shouldGoOutside then
-							bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
+							bot.Pathfinder.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 500, 10, 10)
 							bot:SetTask( WANDER_AROUND )
 						end
 					end
@@ -442,24 +443,24 @@ function controlBots ( bot, cmd )
 					--debugoverlay.Box( bot:GetPos(), Vector( -18, -18, 0 ), Vector( 18, 18, 73 ), 0, Color( 255, 255, 255 ), false )
 					
 				else--if GAMEMODE:GetWave() != 0 then
-					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
+					bot.Pathfinder.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
 					bot:SetTask( WANDER_AROUND )
 				end
 			end
 			
-		elseif IsValid( bot.FollowerEnt.TargetEnemy ) then
-			local myTarget = bot.FollowerEnt.TargetEnemy
+		elseif IsValid( bot.Pathfinder.TargetEnemy ) then
+			local myTarget = bot.Pathfinder.TargetEnemy
 			
 			if bot:GetZombieClassTable().Name != "Crow" then
 				
 				local tr = util.TraceLine( {
 					start = bot:EyePos(),
-					endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+					endpos = bot:AimPoint( bot.Pathfinder.TargetEnemy ),
 					filter = function( ent ) if ( ent != myTarget and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 				} )
 				
 				if !GAMEMODE:GetWaveActive() then
-					if tr.Hit and bot.FollowerEnt.TargetPosition != nil and ROUNDWINNER != bot:Team() then
+					if tr.Hit and bot.Pathfinder.TargetPosition != nil and ROUNDWINNER != bot:Team() then
 						bot:SetTask( HIDE_FROM_HUMANS )
 					end
 				end
@@ -493,7 +494,7 @@ function controlBots ( bot, cmd )
 				else
 					bot.moveType = -1
 				
-					bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
+					bot:SetLookAt(bot:AimPoint( bot.Pathfinder.TargetEnemy ))
 				end
 				
 				if !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
@@ -520,12 +521,12 @@ function controlBots ( bot, cmd )
 				
 				if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER_OR_EQUAL, 45 ) and bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), SMALLER, 400 ) and !tr.Hit and !bot.jumpHold and !bot.useHold and bot:GetMoveType() != MOVETYPE_LADDER then
 					if bot:GetZombieClassTable().Name == "Fast Zombie" then
-						local aimPoint = bot:AimPoint( bot.FollowerEnt.TargetEnemy )
+						local aimPoint = bot:AimPoint( bot.Pathfinder.TargetEnemy )
 						
 						bot:SetLookAt(Vector(aimPoint.x, aimPoint.y, aimPoint.z + (bot:GetPos():Distance( myTarget:GetPos()) / 4 )))
 						bot.attack2Timer = true
 					else
-						bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
+						bot:SetLookAt(bot:AimPoint( bot.Pathfinder.TargetEnemy ))
 					end
 				end
 				
@@ -677,7 +678,7 @@ function controlBots ( bot, cmd )
 	--Zombies: Go to hiding spot
 	elseif bot.Task == MELEE_ZOMBIE then
 		if bot:Team() != TEAM_UNDEAD then
-			--[[if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 500 ) then
+			--[[if bot:GetPos():QuickDistanceCheck( bot.Pathfinder.TargetEnemy:GetPos(), BIGGER, 500 ) then
 				cmd:SetForwardMove( 1000 )
 				
 				if bot:GetMoveType() == MOVETYPE_LADDER then
@@ -687,21 +688,21 @@ function controlBots ( bot, cmd )
 				else
 					CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd)
 				end
-			elseif bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetEnemy:GetPos(), BIGGER, 250 ) then 
+			elseif bot:GetPos():QuickDistanceCheck( bot.Pathfinder.TargetEnemy:GetPos(), BIGGER, 250 ) then 
 				bot.moveType = -1
 				
-				bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
+				bot:SetLookAt(bot:AimPoint( bot.Pathfinder.TargetEnemy ))
 				
 				bot.attackTimer = true
 			else
 				bot.moveType = 4
 				
-				bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
+				bot:SetLookAt(bot:AimPoint( bot.Pathfinder.TargetEnemy ))
 				
 				bot.attackTimer = true
 			end]]
 			
-			local myTarget = bot.FollowerEnt.TargetEnemy
+			local myTarget = bot.Pathfinder.TargetEnemy
 			bot.Disposition = IGNORE_ENEMIES
 			
 			if !IsValid (myTarget) or myTarget:Health() <= 0 or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or !bot:GetActiveWeapon().IsMelee or bot:GetActiveWeapon():GetClass() == "weapon_zs_hammer" then
@@ -731,23 +732,23 @@ function controlBots ( bot, cmd )
 					end
 					
 					if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), SMALLER, 400 ) then
-						bot:SetLookAt(bot:AimPoint( bot.FollowerEnt.TargetEnemy ))
+						bot:SetLookAt(bot:AimPoint( bot.Pathfinder.TargetEnemy ))
 					end
 				end
 			end
 		
 		elseif bot:GetZombieClassTable().Name != "Crow" then
-			local myTarget = bot.FollowerEnt.TargetPosition
+			local myTarget = bot.Pathfinder.TargetPosition
 			
 			if GAMEMODE:GetWaveActive() or myTarget == nil or ROUNDWINNER == bot:Team() then
 				bot:SetTask( GOTO_HUMANS )
 			end
 			
-			if IsValid( bot.FollowerEnt.TargetEnemy ) then 
+			if IsValid( bot.Pathfinder.TargetEnemy ) then 
 				local tr = util.TraceLine( {
 					start = bot:EyePos(),
-					endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
-					filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
+					endpos = bot:AimPoint( bot.Pathfinder.TargetEnemy ),
+					filter = function( ent ) if ( ent != bot.Pathfinder.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 				} )
 				
 				if !tr.Hit then
@@ -779,7 +780,7 @@ function controlBots ( bot, cmd )
 	--Zombies: (Shade) Pickup props and throw them at humans
 	elseif bot.Task == HEAL_TEAMMATE then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetHealing
+			local myTarget = bot.Pathfinder.TargetHealing
 			bot.Disposition = SELF_DEFENSE
 			
 			if bot:HasWeapon("weapon_zs_medicalkit") then
@@ -788,7 +789,7 @@ function controlBots ( bot, cmd )
 				local medWep = bot:GetWeapon("weapon_zs_medicalkit")
 				local medCooldown = (medWep:GetNextCharge() - CurTime())
 				
-				if !IsValid( myTarget ) or !IsValid( bot.FollowerEnt.TargetTeammate ) or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or medCooldown > 0 or medWep:GetPrimaryAmmoCount() <= 0 then 
+				if !IsValid( myTarget ) or !IsValid( bot.Pathfinder.TargetTeammate ) or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) or medCooldown > 0 or medWep:GetPrimaryAmmoCount() <= 0 then 
 					bot:SetTask( GOTO_ARSENAL )
 				end
 				
@@ -837,7 +838,7 @@ function controlBots ( bot, cmd )
 		if bot:Team() != TEAM_UNDEAD then
 			bot.Disposition = SELF_DEFENSE
 			
-			if !IsValid(bot.FollowerEnt.TargetArsenal) or !IsValid( bot:GetActiveWeapon() ) then
+			if !IsValid(bot.Pathfinder.TargetArsenal) or !IsValid( bot:GetActiveWeapon() ) then
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
@@ -852,16 +853,16 @@ function controlBots ( bot, cmd )
 				
 				if curWep:GetClass() == "weapon_zs_gunturret" or curWep:GetClass() == "weapon_zs_ffemitter" or curWep:GetClass() == "weapon_zs_spotlamp" then
 					
-					if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
+					if bot.Pathfinder.TargetArsenal.DefendingSpots == nil or bot.Pathfinder.TargetArsenal.DefendingSpots[1] == nil then
 						bot:SetTask( GOTO_ARSENAL )
 					end
 					
 					if bot.Task == PLACE_DEPLOYABLE then
-						if bot:GetPos():QuickDistanceCheck( bot.FollowerEnt.TargetCadingSpot, BIGGER, 125 ) then
-							bot:LookatPosXY( cmd, bot.FollowerEnt.TargetCadingSpot )
-							CloseToPointCheck (bot, curgoal.pos, bot.FollowerEnt.TargetCadingSpot, cmd, false)					
+						if bot:GetPos():QuickDistanceCheck( bot.Pathfinder.TargetCadingSpot, BIGGER, 125 ) then
+							bot:LookatPosXY( cmd, bot.Pathfinder.TargetCadingSpot )
+							CloseToPointCheck (bot, curgoal.pos, bot.Pathfinder.TargetCadingSpot, cmd, false)					
 						else
-							local theAng = (bot.FollowerEnt.TargetCadingSpot - bot:GetPos()):Angle()
+							local theAng = (bot.Pathfinder.TargetCadingSpot - bot:GetPos()):Angle()
 							bot.lookAngle = Angle(bot.lookAngle.x, theAng.y, 0)
 							
 							bot.moveType = -1
@@ -879,9 +880,9 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == WANDER_AROUND then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetPosition
+			local myTarget = bot.Pathfinder.TargetPosition
 			
-			if IsValid (bot.FollowerEnt.TargetArsenal) and ROUNDWINNER != bot:Team() then
+			if IsValid (bot.Pathfinder.TargetArsenal) and ROUNDWINNER != bot:Team() then
 				if bot:Health() <= (3 / 4 * bot:GetMaxHealth()) or GAMEMODE:GetWaveActive() or GAMEMODE:GetWaveStart() - 15 <= CurTime() or GAMEMODE:GetWave() == 0 then
 					bot.newPointTimer = 15
 					bot:SetTask( GOTO_ARSENAL )
@@ -910,8 +911,8 @@ function controlBots ( bot, cmd )
 				bot:LootCheck()
 				
 				if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):QuickDistanceCheck( Vector( myTarget.x, myTarget.y, 0 ), SMALLER, 20 ) or bot.newPointTimer <= 0 then
-					bot.FollowerEnt.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
-					bot.FollowerEnt:NavCheck()
+					bot.Pathfinder.TargetPosition = GetRandomPositionOnNavmesh(bot:GetPos(), 1000, 10, 10)
+					bot.Pathfinder:NavCheck()
 					
 					if bot.newPointTimer <= 0 and GetConVar( "zs_bot_debug_path" ):GetInt() != 0 then 
 						print(bot:Name() .. " took too long to get to wander point, going to new one.") 
@@ -921,12 +922,12 @@ function controlBots ( bot, cmd )
 					bot.newPointTimer = 15
 				end
 				
-				if IsValid (bot.FollowerEnt.TargetEnemy) then
+				if IsValid (bot.Pathfinder.TargetEnemy) then
 					local tr = util.TraceLine( {
 						start = bot:EyePos(),
-						endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+						endpos = bot:AimPoint( bot.Pathfinder.TargetEnemy ),
 						mask = MASK_SHOT,
-						filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
+						filter = function( ent ) if ( ent != bot.Pathfinder.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 					} )
 					
 					if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then					
@@ -947,7 +948,7 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == REPAIR_CADE then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetNailedProp
+			local myTarget = bot.Pathfinder.TargetNailedProp
 			bot.Disposition = IGNORE_ENEMIES
 			
 			if !IsValid( myTarget ) or bot:Health() <= (1.5 / 4 * bot:GetMaxHealth()) or !bot:HasWeapon("weapon_zs_hammer") then
@@ -1044,7 +1045,7 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == PICKUP_CADING_PROP then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetCadingProp
+			local myTarget = bot.Pathfinder.TargetCadingProp
 			bot.Disposition = IGNORE_ENEMIES
 			
 			if !IsValid(myTarget) then
@@ -1082,7 +1083,7 @@ function controlBots ( bot, cmd )
 				
 				if myTarget:GetHolder() == bot then
 					bot.heldProp = myTarget
-					bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
+					bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
 					bot:SetTask( MAKE_CADE )
 				end
 			end
@@ -1094,16 +1095,16 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == MAKE_CADE then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetCadingSpot
+			local myTarget = bot.Pathfinder.TargetCadingSpot
 			bot.Disposition = IGNORE_ENEMIES
 			
-			if !IsValid(bot.heldProp) or myTarget != nil then
+			if !IsValid(bot.heldProp) or myTarget == nil then
 				bot.sprintHold = false
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
 			if bot.Task == MAKE_CADE then
-				--myTarget = bot.FollowerEnt.TargetArsenal.CadingSpots[1]
+				myTarget = bot.Pathfinder.TargetCadingSpot
 				
 				local oof = bot:GetPos()
 				
@@ -1118,7 +1119,7 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )
 					
 					else
-						
+						print("oof")
 						
 						bot:LookatPosXY( cmd, myTarget )
 						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
@@ -1170,7 +1171,7 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == RESUPPLY_AMMO then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetResupply
+			local myTarget = bot.Pathfinder.TargetResupply
 			bot.Disposition = IGNORE_ENEMIES
 			
 			if !IsValid(myTarget) then
@@ -1207,7 +1208,7 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == PICKUP_LOOT then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetLootItem
+			local myTarget = bot.Pathfinder.TargetLootItem
 			bot.Disposition = SELF_DEFENSE
 			
 			if bot.giveUpTimer > 0 then bot.giveUpTimer = bot.giveUpTimer - FrameTime() end
@@ -1220,7 +1221,7 @@ function controlBots ( bot, cmd )
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
-			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 or !IsValid(myTarget) or IsValid(bot.FollowerEnt.TargetEnemy) then
+			if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() == 0 or !IsValid(myTarget) or IsValid(bot.Pathfinder.TargetEnemy) then
 				bot.moveType = -1
 				bot.crouchHold = false
 				bot.giveUpTimer = 0
@@ -1236,7 +1237,7 @@ function controlBots ( bot, cmd )
 				
 				else
 					
-					if IsValid(bot.FollowerEnt.TargetEnemy) then
+					if IsValid(bot.Pathfinder.TargetEnemy) then
 						bot.moveType = -1
 						bot.crouchHold = false
 						bot:SetTask( GOTO_ARSENAL )
@@ -1275,15 +1276,15 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == DEFEND_CADE then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetCadingSpot
+			local myTarget = bot.Pathfinder.TargetCadingSpot
 			bot.Disposition = OPPORTUNITY_FIRE
 			
-			if !IsValid(bot.FollowerEnt.TargetArsenal) then
+			if !IsValid(bot.Pathfinder.TargetArsenal) then
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
-			if IsValid (bot.FollowerEnt.TargetArsenal) then
-				if bot.FollowerEnt.TargetArsenal.DefendingSpots == nil or bot.FollowerEnt.TargetArsenal.DefendingSpots[1] == nil then
+			if IsValid (bot.Pathfinder.TargetArsenal) then
+				if bot.Pathfinder.TargetArsenal.DefendingSpots == nil or bot.Pathfinder.TargetArsenal.DefendingSpots[1] == nil then
 					bot:SetTask( GOTO_ARSENAL )
 				end
 			else
@@ -1291,7 +1292,7 @@ function controlBots ( bot, cmd )
 			end
 			
 			if bot.Task == DEFEND_CADE then
-				if bot.FollowerEnt.TargetArsenal.DefendingSpots != nil and bot.FollowerEnt.TargetArsenal.DefendingSpots[1] != nil then
+				if bot.Pathfinder.TargetArsenal.DefendingSpots != nil and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
 					
 					bot.guardTimer = bot.guardTimer - FrameTime()
 					--print (bot.guardTimer)
@@ -1302,8 +1303,8 @@ function controlBots ( bot, cmd )
 							
 							bot.guardTimer = math.random( 5, 10 )
 						else
-							bot.FollowerEnt.TargetCadingSpot = table.Random(bot.FollowerEnt.TargetArsenal.DefendingSpots)
-							bot.FollowerEnt:NavCheck()
+							bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
+							bot.Pathfinder:NavCheck()
 							
 							bot.guardTimer = math.random( 5, 10 )					
 						end
@@ -1322,7 +1323,7 @@ function controlBots ( bot, cmd )
 							bot.moveType = -1
 						end
 						
-						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.FollowerEnt.TargetResupply) and CurTime() > bot.targetFindDelay then
+						if IsValid( bot:GetActiveWeapon()) and IsValid(bot.Pathfinder.TargetResupply) and CurTime() > bot.targetFindDelay then
 							local curWep = bot:GetActiveWeapon()
 							local otherWep = bot:GetOtherWeapon(HAS_NO_AMMO)
 							
@@ -1350,7 +1351,7 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == SNIPING then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetPosition
+			local myTarget = bot.Pathfinder.TargetPosition
 			
 			bot.lookDistance = 10000
 			if bot:GetPos():QuickDistanceCheck( myTarget, BIGGER, 50 ) then
@@ -1376,7 +1377,7 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	elseif bot.Task == FOLLOW then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetTeammate
+			local myTarget = bot.Pathfinder.TargetTeammate
 		
 			if !game.IsObj() and !GAMEMODE.ZombieEscape then
 				bot:SetTask( GOTO_ARSENAL )
@@ -1399,13 +1400,13 @@ function controlBots ( bot, cmd )
 						filter = function( ent ) if ( ent:IsWorld() ) then return true end end
 					} )
 					
-					if IsValid (bot.FollowerEnt.TargetEnemy) and !GAMEMODE.ZombieEscape then
+					if IsValid (bot.Pathfinder.TargetEnemy) and !GAMEMODE.ZombieEscape then
 						if bot:GetActiveWeapon().IsMelee and bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then
 							local mtr = util.TraceLine( {
 								start = bot:EyePos(),
-								endpos = bot:AimPoint( bot.FollowerEnt.TargetEnemy ),
+								endpos = bot:AimPoint( bot.Pathfinder.TargetEnemy ),
 								mask = MASK_SHOT,
-								filter = function( ent ) if ( ent != bot.FollowerEnt.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
+								filter = function( ent ) if ( ent != bot.Pathfinder.TargetEnemy and ent != bot and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 							} )
 							
 							if !mtr.Hit and bot.runAwayTimer <= 0 and !IsValid(bot:GetOtherWeapon(HAS_AMMO)) then
@@ -1444,7 +1445,7 @@ function controlBots ( bot, cmd )
 	--Zombies: ...
 	--[[if bot.Task == SPAWNKILL_ZOMBIES then
 		if bot:Team() != TEAM_UNDEAD then
-			local myTarget = bot.FollowerEnt.TargetEnemy
+			local myTarget = bot.Pathfinder.TargetEnemy
 			
 		end
 	end]]
@@ -1457,8 +1458,8 @@ function controlBots ( bot, cmd )
 	
 	--==================== END CHECKS ====================
 	
-	if IsValid(bot.FollowerEnt.TargetEnemy) then
-		if bot.lookAngle == (bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle() then 
+	if IsValid(bot.Pathfinder.TargetEnemy) then
+		if bot.lookAngle == (bot:AimPoint( bot.Pathfinder.TargetEnemy ) - bot:EyePos()):Angle() then 
 			bot.Attacking = true 
 		else 
 			bot.Attacking = false 
@@ -1495,7 +1496,7 @@ function botDisconnect( ply )
 	if !ply.IsZSBot2 then return end
 	
 	--Remove the bots navigator entity so it doesn't cause errors
-	ply.FollowerEnt:Remove()
+	ply.Pathfinder:Remove()
 end
 hook.Add( "PlayerDisconnected","botDisconnect",botDisconnect)
 

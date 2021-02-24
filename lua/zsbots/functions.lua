@@ -74,7 +74,7 @@ function plymeta:DoSpectateDebugUI()
 	for i, ply in ipairs(player.GetHumans()) do
 		if ply.FSpectatingEnt == self then
 		
-			local FE = self.FollowerEnt
+			local FE = self.Pathfinder
 			local daPos = nil
 			local daName = nil
 
@@ -167,17 +167,17 @@ function plymeta:DoSpectateDebugUI()
 			
 			debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. self.Skill .. "%", 0, Color(255, 255, 255))
 			
-			--[[if self:Team() == TEAM_HUMAN and self.Task == PICKUP_LOOT and IsValid(self.FollowerEnt.TargetLootItem) then
-				debugoverlay.Box(self.FollowerEnt.TargetLootItem:GetPos(), self.FollowerEnt.TargetLootItem:OBBMins(), self.FollowerEnt.TargetLootItem:OBBMaxs(), 0, Color( 255, 255, 0, 0 ))
-				debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(self.FollowerEnt.TargetLootItem), 0, Color(255, 255, 0))
+			--[[if self:Team() == TEAM_HUMAN and self.Task == PICKUP_LOOT and IsValid(self.Pathfinder.TargetLootItem) then
+				debugoverlay.Box(self.Pathfinder.TargetLootItem:GetPos(), self.Pathfinder.TargetLootItem:OBBMins(), self.Pathfinder.TargetLootItem:OBBMaxs(), 0, Color( 255, 255, 0, 0 ))
+				debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(self.Pathfinder.TargetLootItem), 0, Color(255, 255, 0))
 			end]]
 			
 			if !self.Attacking then
 				debugoverlay.ScreenText( 0.55, 0.4, "Task: " .. self:GetTaskName(), 0, Color(0, 255, 0))
 				debugoverlay.ScreenText( 0.55, 0.42, "Disposition: " .. self:GetDispositionName(), 0, Color(100, 100, 255))
 				if daName != nil then debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(daName), 0, Color(255, 255, 0)) end
-			elseif IsValid(self.FollowerEnt.TargetEnemy) then
-				debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. self.FollowerEnt.TargetEnemy:Name(), 0, Color(255, 0, 0))
+			elseif IsValid(self.Pathfinder.TargetEnemy) then
+				debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. self.Pathfinder.TargetEnemy:Name(), 0, Color(255, 0, 0))
 			end
 			
 			debugoverlay.ScreenText( 0.55, 0.54, "Steady view = " .. "N/A", 0, Color(255, 255, 0))
@@ -256,7 +256,7 @@ function plymeta:SetBotControlling( b )
 		if self.IsZSBot2 then
 			print ( "Stopped bot controlling " .. self:Name() )
 			self.IsZSBot2 = false
-			if IsValid(self.FollowerEnt) then self.FollowerEnt:Remove() end
+			if IsValid(self.Pathfinder) then self.Pathfinder:Remove() end
 		end
 	end
 end
@@ -264,7 +264,7 @@ end
 function plymeta:SetTask( task )
 	self.Task = task
 	
-	if IsValid(self.FollowerEnt) then self.FollowerEnt:NavCheck() end
+	if IsValid(self.Pathfinder) then self.Pathfinder:NavCheck() end
 end
 
 function plymeta:SetLookAt( position )
@@ -276,15 +276,15 @@ function plymeta:DispositionCheck( cmd, enemy )
 	
 	local tr = util.TraceLine( {
 		start = self:EyePos(),
-		endpos = self:AimPoint( self.FollowerEnt.TargetEnemy ),
+		endpos = self:AimPoint( self.Pathfinder.TargetEnemy ),
 		mask = MASK_SHOT,
-		filter = function( ent ) if ( ent != self.FollowerEnt.TargetEnemy and ent != self and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
+		filter = function( ent ) if ( ent != self.Pathfinder.TargetEnemy and ent != self and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 	} )
 	
 	if self.Disposition == ENGAGE_AND_INVESTIGATE then --ENGAGE_AND_INVESTIGATE
-		if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
+		if self:GetPos():QuickDistanceCheck( self.Pathfinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
-				self:SetLookAt(self:AimPoint( self.FollowerEnt.TargetEnemy ))
+				self:SetLookAt(self:AimPoint( self.Pathfinder.TargetEnemy ))
 				
 				self:ShootAtTarget()
 			end
@@ -292,9 +292,9 @@ function plymeta:DispositionCheck( cmd, enemy )
 			
 		end
 	elseif self.Disposition == OPPORTUNITY_FIRE then --OPPORTUNITY_FIRE
-		if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
+		if self:GetPos():QuickDistanceCheck( self.Pathfinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
-				self:SetLookAt(self:AimPoint( self.FollowerEnt.TargetEnemy ))
+				self:SetLookAt(self:AimPoint( self.Pathfinder.TargetEnemy ))
 				
 				if self.Skill > 25 and IsValid(self:GetActiveWeapon()) then
 					if self:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() then
@@ -700,7 +700,7 @@ function SayPresetMessage(bot, category, teamOnly)
 		botSay(message)
 	elseif category == 1 then
 		--Boss outside messages
-		local msgs = {bot.FollowerEnt.TargetEnemy:GetZombieClassTable().Name .. " outside.", bot.FollowerEnt.TargetEnemy:GetZombieClassTable().Name .. " is outside the cade."}
+		local msgs = {bot.Pathfinder.TargetEnemy:GetZombieClassTable().Name .. " outside.", bot.Pathfinder.TargetEnemy:GetZombieClassTable().Name .. " is outside the cade."}
 		local message = msgs[math.random(1, #msgs)]
 		
 		botSay(message)
@@ -1194,7 +1194,6 @@ end
 function entmeta:FindCadingSpots( centerArea )
 	if self.UnCheckableAreas == nil then self.UnCheckableAreas = {} end
 	if self.DefendingSpots == nil then self.DefendingSpots = {} end
-	if self.CadingSpots == nil then self.CadingSpots = {} end
 	
 	if table.HasValue( self.UnCheckableAreas, centerArea ) or !IsValid( centerArea) then return end
 	
@@ -1311,10 +1310,10 @@ function plymeta:SetBotValues()
 	--self.rotationTimer = 0
 	
 	--BOT NAVIGATOR
-	if !IsValid(self.FollowerEnt) then
-		self.FollowerEnt = ents.Create( "sent_zsbot_pathfinder" )
-		self.FollowerEnt:Spawn()
-		self.FollowerEnt.Bot = self
+	if !IsValid(self.Pathfinder) then
+		self.Pathfinder = ents.Create( "sent_zsbot_pathfinder" )
+		self.Pathfinder:Spawn()
+		self.Pathfinder.Bot = self
 	end
 	
 	--OTHER STUFF
@@ -1428,17 +1427,17 @@ function plymeta:LootCheck()
 	
 	if self.giveUpTimer > 0 then self.giveUpTimer = self.giveUpTimer - FrameTime() end
 	
-	if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 and IsValid( self.FollowerEnt.TargetLootItem ) and !IsValid( self.FollowerEnt.TargetEnemy ) and self.giveUpTimer <= 0 then
+	if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 and IsValid( self.Pathfinder.TargetLootItem ) and !IsValid( self.Pathfinder.TargetEnemy ) and self.giveUpTimer <= 0 then
 		local lootTrace = util.TraceLine( {
 			start = self:EyePos(),
-			endpos = self.FollowerEnt.TargetLootItem:LocalToWorld(self.FollowerEnt.TargetLootItem:OBBCenter()),
+			endpos = self.Pathfinder.TargetLootItem:LocalToWorld(self.Pathfinder.TargetLootItem:OBBCenter()),
 			mask = MASK_SHOT,
-			filter = function( ent ) if ( ent != self.FollowerEnt.TargetLootItem and !ent:IsPlayer() ) then return true end end
+			filter = function( ent ) if ( ent != self.Pathfinder.TargetLootItem and !ent:IsPlayer() ) then return true end end
 		} )
 		
-		--debugoverlay.Line( self:EyePos(), self.FollowerEnt.TargetLootItem:LocalToWorld(self.FollowerEnt.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+		--debugoverlay.Line( self:EyePos(), self.Pathfinder.TargetLootItem:LocalToWorld(self.Pathfinder.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 		
-		--if IsValid (self.FollowerEnt.TargetEnemy) then
+		--if IsValid (self.Pathfinder.TargetEnemy) then
 			if !lootTrace.Hit then
 				self.giveUpTimer = math.Rand(5, 7)
 				self:SetTask( PICKUP_LOOT )
@@ -1452,11 +1451,11 @@ function plymeta:LootCheck()
 end
 
 function plymeta:RunAwayCheck( cmd )
-	if IsValid (self.FollowerEnt.TargetEnemy) then
+	if IsValid (self.Pathfinder.TargetEnemy) then
 		self.b = true
 		
 		if self.runAwayTimer <= 0 then
-			if self:GetPos():QuickDistanceCheck( self.FollowerEnt.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, 150 ) then
+			if self:GetPos():QuickDistanceCheck( self.Pathfinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, 150 ) then
 				self.runAwayTimer = math.random(1, 3)
 			end
 		elseif self.Skill > 50 then
@@ -1496,11 +1495,11 @@ function plymeta:ShootAtTarget()
 	local skillSteadyShoot = math.Remap( self.Skill, 0, 100, 25, 10 )
 	
 	local th = util.TraceHull( {
-		start = self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.FollowerEnt.TargetEnemy )),
+		start = self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.Pathfinder.TargetEnemy )),
 		mins = Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ),
 		maxs = Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ),
 		ignoreworld = true,
-		filter = function( ent ) if ( ent == self.FollowerEnt.TargetEnemy ) then return true end end
+		filter = function( ent ) if ( ent == self.Pathfinder.TargetEnemy ) then return true end end
 	} )
 	
 	local colour = Color( 255, 0, 0, 0)
@@ -1510,7 +1509,7 @@ function plymeta:ShootAtTarget()
 		colour = Color( 0, 255, 0, 0)
 	end
 	
-	if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.FollowerEnt.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour ) end
+	if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.Pathfinder.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour ) end
 end
 
 function plymeta:AimPoint( target )
@@ -1618,10 +1617,10 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 		crouchJump = true
 	end
 	
-	if !IsValid( bot.FollowerEnt.P ) then return end
+	if !IsValid( bot.Pathfinder.P ) then return end
 	
-	if IsValid(bot.FollowerEnt.TargetEnemy) then
-		if bot.lookAngle == (bot:AimPoint( bot.FollowerEnt.TargetEnemy ) - bot:EyePos()):Angle() then 
+	if IsValid(bot.Pathfinder.TargetEnemy) then
+		if bot.lookAngle == (bot:AimPoint( bot.Pathfinder.TargetEnemy ) - bot:EyePos()):Angle() then 
 			lookAtPoint = false
 		end
 	end
@@ -1640,14 +1639,14 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	end
 	
 	if lookAtPoint then
-		if #bot.FollowerEnt.P:GetAllSegments() <= 2 then
+		if #bot.Pathfinder.P:GetAllSegments() <= 2 then
 			bot:LookatPosXY( cmd, goalPos )
 		else
 			bot:LookatPosXY(cmd, curgoalPos )
 		end
 	end
 	
-	if #bot.FollowerEnt.P:GetAllSegments() <= 2 then
+	if #bot.Pathfinder.P:GetAllSegments() <= 2 then
 		MoveToPosition(bot, goalPos, cmd)
 	else
 		MoveToPosition(bot, curgoalPos, cmd)
