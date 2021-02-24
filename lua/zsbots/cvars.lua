@@ -9,18 +9,18 @@ CreateConVar( "zs_bot_debug_attack", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICA
 CreateConVar( "zs_bot_debug_path", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Debug ZSBots pathfinding." )
 CreateConVar( "zs_bot_debug_defending_spots", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Debug ZSBots defending spots." )
 
-CreateConVar( "zs_bot_muscular", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots will always have the muscular trait." )
-CreateConVar( "zs_bot_infinite_ammo", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots will have unlimited ammo." )
+CreateConVar( "zs_bot_muscular", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots will always have the muscular trait." )
+CreateConVar( "zs_bot_infinite_ammo", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots will have unlimited ammo." )
 
-CreateConVar( "zs_bot_can_cade", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots may cade." )
-CreateConVar( "zs_bot_can_buy", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots may buy from arsenal crates." )
-CreateConVar( "zs_bot_can_place_deployables", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots may place deployables." )
-CreateConVar( "zs_bot_can_pick_up_loot", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots may pick up loot." )
-CreateConVar( "zs_bot_can_chat", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots may send chat messages." )
+CreateConVar( "zs_bot_can_cade", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots may cade." )
+CreateConVar( "zs_bot_can_buy", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots may buy from arsenal crates." )
+CreateConVar( "zs_bot_can_place_deployables", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots may place deployables." )
+CreateConVar( "zs_bot_can_pick_up_loot", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots may pick up loot." )
+CreateConVar( "zs_bot_can_chat", 1, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots may send chat messages." )
 
-CreateConVar( "zs_bot_force_zombie", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Force ZSBots to be zombies." )
+CreateConVar( "zs_bot_force_zombie", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "Force ZSBots to be zombies." )
 
-CreateConVar( "zs_bot_autospawn_count", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "How many ZSBots to spawn at the start." )
+CreateConVar( "zs_bot_autospawn_count", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "How many ZSBots to spawn at the start." )
 
 concommand.Add( "zs_bot_add", function ( ply, cmd, args, argStr )
 	
