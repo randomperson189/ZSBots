@@ -1059,6 +1059,8 @@ function controlBots ( bot, cmd )
 					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
 				end
 				
+				bot.crouchHold = true
+				
 				if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 50 ) then
 		
 					if bot:GetMoveType() == MOVETYPE_LADDER then
@@ -1112,6 +1114,8 @@ function controlBots ( bot, cmd )
 					oof = bot.heldProp:GetPos()
 				end
 				
+				bot.crouchHold = false
+				
 				if oof:QuickDistanceCheck( myTarget, BIGGER, 75 ) then
 					
 					if bot:GetMoveType() == MOVETYPE_LADDER then
@@ -1119,8 +1123,6 @@ function controlBots ( bot, cmd )
 						bot:DoLadderMovement( cmd, curgoal )
 					
 					else
-						print("oof")
-						
 						bot:LookatPosXY( cmd, myTarget )
 						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
 						
