@@ -1088,62 +1088,55 @@ end
 
 function MoveToPosition (bot, position, cmd)
 	local vec = ( position - bot:GetPos() ):GetNormal():Angle().y
-	local oof = bot:EyeAngles().y
+	local myAngle = bot:EyeAngles().y
 	
-	if oof > 360 then
-		oof = oof - 360
+	if myAngle > 360 then
+		myAngle = myAngle - 360
 	end
-	if oof < 0 then
-		oof = oof + 360
-	end
-	
-	local thingy = vec - oof
-	
-	if thingy > 360 then
-		thingy = thingy - 360
-	end
-	if thingy < 0 then
-		thingy = thingy + 360
+	if myAngle < 0 then
+		myAngle = myAngle + 360
 	end
 	
-	--print ("my eye angles", oof, "the angle", vec, "the sum thing", thingy)
+	local angleAround = vec - myAngle
 	
-	if thingy <= 22.5 or thingy > 337.5 then
+	if angleAround > 360 then
+		angleAround = angleAround - 360
+	end
+	if angleAround < 0 then
+		angleAround = angleAround + 360
+	end
+	
+	--print ("my eye angles", myAngle, "the angle", vec, "the angle around", angleAround)
+	
+	if angleAround <= 22.5 or angleAround > 337.5 then
 		bot.moveType = 0
 		--print ("Forward")
 	end
-	
-	if thingy > 22.5 and thingy <= 67.5 then
+	if angleAround > 22.5 and angleAround <= 67.5 then
 		bot.moveType = 1
 		--print ("Forward Left")
 	end
-	
-	if thingy > 67.5 and thingy <= 112.5 then
+	if angleAround > 67.5 and angleAround <= 112.5 then
 		bot.moveType = 2
 		--print ("Left")
 	end
-	
-	if thingy > 112.5 and thingy <= 157.5 then
+	if angleAround > 112.5 and angleAround <= 157.5 then
 		bot.moveType = 3
 		--print ("Left Back")
 	end
-	
-	if thingy > 157.5 and thingy <= 202.5 then
+	if angleAround > 157.5 and angleAround <= 202.5 then
 		bot.moveType = 4
 		--print ("Back")
 	end
-	
-	if thingy > 202.5 and thingy <= 247.5 then
+	if angleAround > 202.5 and angleAround <= 247.5 then
 		bot.moveType = 5
 		--print ("Back Right")
 	end
-	
-	if thingy > 247.5 and thingy <= 292.5 then
+	if angleAround > 247.5 and angleAround <= 292.5 then
 		bot.moveType = 6
 		--print ("Right")
 	end
-	
-	if thingy > 292.5 and thingy <= 337.5 then
+	if angleAround > 292.5 and angleAround <= 337.5 then
 		bot.moveType = 7
 		--print ("Forward Right")
 	end
@@ -1182,11 +1175,14 @@ function plymeta:GetOtherWeapon(ammoCheck)
 end
 
 function CheckNavMeshAttributes( bot, cmd )
-	--[[if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_CROUCH then
+	
+	local navArea = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY )
+	if !IsValid(navArea) then return end
+	
+	--[[if navArea:GetAttributes() == NAV_MESH_CROUCH then
 		bot.crouchHold = true
 	end]]
-	
-	if navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetAttributes() == NAV_MESH_JUMP then
+	if navArea:GetAttributes() == NAV_MESH_JUMP then
 		bot.cJumpTimer = true
 	end
 end
@@ -1318,11 +1314,10 @@ function plymeta:SetBotValues()
 	
 	--OTHER STUFF
 	self.LastPath = nil
-	self.lastPos = Vector(0, 0 , 0)
+	self.lastPos = vector_origin
 	self.lookProp = nil
 	self.lookPos = nil
 	self.lookDistance = 1000
-	self.heldProp = nil
 	self.cJumpDelay = 0
 	self.strafeType = -1 --0 = left, 1 = right, 2 = back
 	self.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr

@@ -97,8 +97,9 @@ function controlBots ( bot, cmd )
 			local otherWep = bot:GetOtherWeapon(HAS_AMMO)
 			
 			if IsValid(curWep) then
-				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) and !curWep.IsMelee or curWep.IsMelee or curWep.Primary.Heal or curWep.AmmoIfHas then	
+				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and !curWep.IsMelee or curWep.IsMelee or curWep.Primary.Heal or curWep.AmmoIfHas then	
 					if otherWep != nil then
+						print(bot:GetName().. "'s current ammo is " .. bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) .. " switching weapon to " .. otherWep:GetClass() .. " because it has ammo")
 						bot:SelectWeapon(otherWep)
 					else
 						for i, meleeWep in ipairs(bot:GetWeapons()) do 
@@ -232,12 +233,12 @@ function controlBots ( bot, cmd )
 		if IsValid(bot.Pathfinder.TargetArsenal) then
 			if bot.Pathfinder.TargetArsenal.UnCheckableAreas != nil then
 				for i, area in ipairs(bot.Pathfinder.TargetArsenal.UnCheckableAreas) do
-					debugoverlay.Box(Vector (0,0,0), area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
+					debugoverlay.Box(vector_origin, area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
 				end
 				
 				for s, spot in ipairs(bot.Pathfinder.TargetArsenal.DefendingSpots) do
 					if bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
-						debugoverlay.Box(Vector (0,0,0), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
+						debugoverlay.Box(vector_origin, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
 					end
 				end
 			end
@@ -421,7 +422,6 @@ function controlBots ( bot, cmd )
 						if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 and IsValid(bot.Pathfinder.TargetArsenal) then
 							if IsValid (bot.Pathfinder.TargetCadingProp) and bot.BuffMuscular and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
 								if bot:HasWeapon("weapon_zs_hammer") then
-									bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
 									bot:SetTask( PICKUP_CADING_PROP )
 								end	
 							end
@@ -1055,25 +1055,19 @@ function controlBots ( bot, cmd )
 			
 			if bot.Task == PICKUP_CADING_PROP then
 				
+				--bot.crouchHold = true
+				
 				if bot:GetActiveWeapon():GetClass() != "weapon_zs_hammer" then
 					cmd:SelectWeapon (bot:GetWeapon("weapon_zs_hammer"))
 				end
 				
-				bot.crouchHold = true
-				
 				if bot:GetPos():QuickDistanceCheck( myTarget:GetPos(), BIGGER, 50 ) then
-		
 					if bot:GetMoveType() == MOVETYPE_LADDER then
-					
 						bot:DoLadderMovement( cmd, curgoal )
-					
 					else
-						
-						
 						CloseToPointCheck (bot, curgoal.pos, myTarget:GetPos(), cmd, false)
 						bot:SetLookAt(myTarget:LocalToWorld(myTarget:OBBCenter()))
 					end
-			
 				else
 					bot.moveType = -1
 					
@@ -1083,14 +1077,13 @@ function controlBots ( bot, cmd )
 				
 				bot:CheckPropPhasing()
 				
-				if myTarget:GetHolder() == bot then
-					bot.heldProp = myTarget
+				if bot:GetHolding() == myTarget then
+					--bot.crouchHold = false
 					bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
 					bot:SetTask( MAKE_CADE )
 				end
 			end
 		end
-	
 	
 	--Task 8
 	--Humans: Cade at cading spots
@@ -1098,51 +1091,53 @@ function controlBots ( bot, cmd )
 	elseif bot.Task == MAKE_CADE then
 		if bot:Team() != TEAM_UNDEAD then
 			local myTarget = bot.Pathfinder.TargetCadingSpot
+			local heldProp = bot:GetHolding()
 			bot.Disposition = IGNORE_ENEMIES
 			
-			if !IsValid(bot.heldProp) or myTarget == nil then
+			if !IsValid(heldProp) or bot:GetHolding() != heldProp or myTarget == nil then
 				bot.sprintHold = false
 				bot:SetTask( GOTO_ARSENAL )
 			end
 			
-			if bot.Task == MAKE_CADE then
-				myTarget = bot.Pathfinder.TargetCadingSpot
-				
-				local oof = bot:GetPos()
-				
-				if bot.heldProp:GetHolder() == bot then
-					oof = bot.heldProp:GetPos()
-				end
-				
-				bot.crouchHold = false
-				
-				if oof:QuickDistanceCheck( myTarget, BIGGER, 75 ) then
-					
+			if bot.Task == MAKE_CADE then	
+				if Vector(heldProp:GetPos().x, heldProp:GetPos().y, 0):QuickDistanceCheck( Vector(myTarget.x, myTarget.y, 0), BIGGER, --[[75]] 25 ) then
 					if bot:GetMoveType() == MOVETYPE_LADDER then
-					
 						bot:DoLadderMovement( cmd, curgoal )
-					
 					else
 						bot:LookatPosXY( cmd, myTarget )
 						CloseToPointCheck (bot, curgoal.pos, myTarget, cmd, false)
 						
-						--bot.heldProp:SetAngles(Angle(0,0,0))
+						local angleAround = (heldProp:GetPos() - myTarget):Angle().y 
+						local yAngle = 0
 						
+						if angleAround <= 45 or angleAround > 315 then
+							yAngle = 0
+						end
+						if angleAround > 45 and angleAround <= 135 then
+							yAngle = 90
+						end
+						if angleAround > 135 and angleAround <= 225 then
+							yAngle = 0
+						end
+						if angleAround > 225 and angleAround <= 315 then
+							yAngle = 90
+						end
+						
+						heldProp:SetAngles(Angle(0, yAngle, 0))
 					end
-					
 				else
 					bot.moveType = -1
 					
 					local tr = util.TraceLine( {
-						start = Vector(bot.heldProp:GetPos().x, bot.heldProp:GetPos().y, myTarget.z),
-						endpos = bot.heldProp:GetPos(),
-						filter = function( ent ) if ( ent == bot.heldProp ) then return true end end
+						start = Vector(heldProp:GetPos().x, heldProp:GetPos().y, myTarget.z),
+						endpos = heldProp:GetPos(),
+						filter = function( ent ) if ( ent == heldProp ) then return true end end
 					} )
 					
-					debugoverlay.Line( Vector(bot.heldProp:GetPos().x, bot.heldProp:GetPos().y, myTarget.z), bot.heldProp:GetPos(), 0, Color( 255, 255, 255 ), false )
+					debugoverlay.Line( Vector(heldProp:GetPos().x, heldProp:GetPos().y, myTarget.z), heldProp:GetPos(), 0, Color( 255, 255, 255 ), false )
 					
 					print (tr.StartPos:Distance( tr.HitPos ))
-					--print (Vector(0, 0, bot.heldProp:GetPos().z + bot.heldProp:GetCollisionBounds().z))
+					--print (Vector(0, 0, heldProp:GetPos().z + heldProp:GetCollisionBounds().z))
 					if tr.StartPos:QuickDistanceCheck( tr.HitPos, SMALLER_OR_EQUAL, 7.5 ) then
 						bot.sprintHold = true
 					end
@@ -1151,14 +1146,14 @@ function controlBots ( bot, cmd )
 					bot.lookAngle = Angle(bot.lookAngle.x + 0.5, (myTarget - bot:EyePos()):Angle().y, bot.lookAngle.z)
 					--bot:SetTask( GOTO_ARSENAL )
 					if bot.lookAngle.x >= 89 then 
-						--bot.heldProp = nil
+						--heldProp = nil
 						
 						bot.sprintHold = false
 						bot:SetTask( GOTO_ARSENAL ) 
 					end
 					
-					if bot.heldProp:IsNailed() then
-						--bot.heldProp = nil
+					if heldProp:IsNailed() then
+						--heldProp = nil
 						
 						bot.sprintHold = false
 						bot:SetTask( GOTO_ARSENAL )
