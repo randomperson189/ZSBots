@@ -1179,10 +1179,9 @@ function CheckNavMeshAttributes( bot, cmd )
 	local navArea = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY )
 	if !IsValid(navArea) then return end
 	
-	--[[if navArea:GetAttributes() == NAV_MESH_CROUCH then
-		bot.crouchHold = true
-	end]]
-	if navArea:GetAttributes() == NAV_MESH_JUMP then
+	if navArea:GetAttributes() == NAV_MESH_CROUCH then
+		bot.crouchHoldOnce = true
+	elseif navArea:GetAttributes() == NAV_MESH_JUMP then
 		bot.cJumpTimer = true
 		
 		bot.prevJumpNav = true
