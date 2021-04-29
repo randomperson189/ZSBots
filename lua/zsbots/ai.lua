@@ -6,9 +6,9 @@ function controlBots ( bot, cmd )
 	cmd:ClearMovement()
 	cmd:ClearButtons()
 	
+	if !bot:OnGround() then bot.crouchHoldOnce = true end
+	
 	bot:DispositionCheck( cmd, bot.Pathfinder.TargetEnemy )
-	bot:InputTimers()
-	bot:InputCheck( cmd )
 	
 	CheckNavMeshAttributes( bot, cmd )
 	--morale colour (0, 201, 201)
@@ -1469,6 +1469,11 @@ function controlBots ( bot, cmd )
 	else
 		bot.Attacking = false
 	end
+	
+	bot:InputTimers()
+	bot:InputCheck( cmd )
+	
+	bot.crouchHoldOnce = false
 end
 hook.Add( "StartCommand", "controlBots", controlBots )
 

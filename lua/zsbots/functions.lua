@@ -623,7 +623,7 @@ function plymeta:InputCheck(cmd)
 			self.jumpHold = false
 		end)
 	end
-	if self.crouchHold then
+	if self.crouchHold or self.crouchHoldOnce then
 		crouch = IN_DUCK
 		
 		--[[timer.Simple(0, function()
@@ -1393,6 +1393,7 @@ function plymeta:SetBotValues()
 	self.reloadHold = false
 	self.jumpHold = false
 	self.crouchHold = false
+	self.crouchHoldOnce = false
 	self.useHold = false
 	self.zoomHold = false
 	self.sprintHold = false
