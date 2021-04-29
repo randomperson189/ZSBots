@@ -1184,6 +1184,18 @@ function CheckNavMeshAttributes( bot, cmd )
 	end]]
 	if navArea:GetAttributes() == NAV_MESH_JUMP then
 		bot.cJumpTimer = true
+		
+		bot.prevJumpNav = true
+		bot.moveBack = false
+	elseif !bot:OnGround() then
+		if bot.prevJumpNav then
+			bot.moveBack = true
+		else
+			bot.moveBack = false
+		end
+	else
+		bot.prevJumpNav = false
+		bot.moveBack = false
 	end
 end
 
@@ -1322,6 +1334,9 @@ function plymeta:SetBotValues()
 	self.strafeType = -1 --0 = left, 1 = right, 2 = back
 	self.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
 	self.shouldGoOutside = false
+	self.onlyFollowPlayers = false
+	self.prevJumpNav = false
+	self.moveBack = false
 	
 	--UNUSED THINGIES I MIGHT REMOVE XD
 	--[[self.stopVel = 40
@@ -1613,6 +1628,11 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	end
 	
 	if !IsValid( bot.Pathfinder.P ) then return end
+	
+	if bot.moveBack then
+		bot.moveType = 4
+		return
+	end
 	
 	if IsValid(bot.Pathfinder.TargetEnemy) then
 		if bot.lookAngle == (bot:AimPoint( bot.Pathfinder.TargetEnemy ) - bot:EyePos()):Angle() then 

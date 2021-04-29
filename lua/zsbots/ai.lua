@@ -99,7 +99,7 @@ function controlBots ( bot, cmd )
 			if IsValid(curWep) then
 				if curWep:Clip1() <= 0 and bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) <= 0 and !curWep.IsMelee or curWep.IsMelee or curWep.Primary.Heal or curWep.AmmoIfHas then	
 					if otherWep != nil then
-						print(bot:GetName().. "'s current ammo is " .. bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) .. " switching weapon to " .. otherWep:GetClass() .. " because it has ammo")
+						print(bot:GetName().. "'s current ammo for " .. curWep:GetClass() .. " is " .. bot:GetAmmoCount( curWep:GetPrimaryAmmoType() ) .. " switching weapon to " .. otherWep:GetClass() .. " because it has ammo")
 						bot:SelectWeapon(otherWep)
 					else
 						for i, meleeWep in ipairs(bot:GetWeapons()) do 
@@ -219,10 +219,15 @@ function controlBots ( bot, cmd )
 				bot.Pathfinder.TargetHealing = FindNearestHealTarget( "player", bot )
 			end
 			
-			if bot.Task != 13 then
+			if bot.Task != 14 then
 				bot.Pathfinder.TargetTeammate = FindNearestTeammate( "player", bot )
 			else
-				bot.Pathfinder.TargetTeammate = FindNearestPlayerTeammate( "player", bot )
+				if game.IsObj() or GAMEMODE.ZombieEscape then
+					bot.Pathfinder.TargetTeammate = FindNearestPlayerTeammate( "player", bot )
+				end
+				if !game.IsObj() and !GAMEMODE.ZombieEscape then
+					bot.Pathfinder.TargetTeammate = FindNearestTeammate( "player", bot )
+				end
 			end
 		end
 	end
@@ -1389,7 +1394,7 @@ function controlBots ( bot, cmd )
 				
 					bot:DoLadderMovement( cmd, curgoal )
 			
-				else
+				elseif IsValid(bot.Pathfinder.TargetTeammate) then
 					
 					local atr = util.TraceLine( {
 						start = bot:EyePos(),
