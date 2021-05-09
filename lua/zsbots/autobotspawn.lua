@@ -1,6 +1,5 @@
 hook.Add("PlayerInitialSpawn", "ZSPlayerInitialSpawn", function(ply)
 	if botsSpawned == nil then
-		print(ply)
 		botsSpawned = true
 		
 		if GetConVar( "zs_bot_autospawn_count" ):GetInt() > 0 then
