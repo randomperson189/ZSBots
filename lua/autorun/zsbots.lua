@@ -1,6 +1,7 @@
 if SERVER then
 	include ("zsbots/cvars.lua")
 	include ("zsbots/functions.lua")
+	include ("zsbots/tasks.lua")
 	include ("zsbots/ai.lua")
 	include ("zsbots/autobotspawn.lua")
 end

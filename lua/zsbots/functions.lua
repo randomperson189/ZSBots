@@ -1,4 +1,4 @@
--- HUMAN TASKS
+--HUMAN TASKS
 GOTO_ARSENAL = 1
 MELEE_ZOMBIE = 2
 HEAL_TEAMMATE = 3
@@ -15,21 +15,21 @@ SNIPING = 13
 FOLLOW = 14
 SPAWNKILL_ZOMBIES = 15
 
--- ZOMBIE TASKS
+--ZOMBIE TASKS
 GOTO_HUMANS = 1
 HIDE_FROM_HUMANS = 2
 
--- DISPOSITIONS
+--DISPOSITIONS
 ENGAGE_AND_INVESTIGATE = 1
 OPPORTUNITY_FIRE = 2
 SELF_DEFENSE = 3
 IGNORE_ENEMIES = 4
 
--- MESSAGES
+--MESSAGES
 MSG_MEDIC = 0
 MSG_BOSS_OUTSIDE = 1
 
--- OTHERS
+--OTHERS
 BIGGER = 1
 BIGGER_OR_EQUAL = 2
 SMALLER = 3
@@ -40,7 +40,7 @@ HAS_NO_AMMO = 2
 
 defaultLookDistance = 1000
 defaultEscapeLookDistance = math.huge
-defaultRotationSpeed = 5 -- was 10
+defaultRotationSpeed = 5 --was 10
 
 local plymeta = FindMetaTable("Player")
 if not plymeta then return end
@@ -188,27 +188,6 @@ function plymeta:DoSpectateDebugUI()
 	end
 end
 
-function BotWaveActive(active)
-    for i, bot in ipairs(player.GetZSBots()) do
-		if active then
-			if bot:Team() != TEAM_UNDEAD then
-				bot.shouldGoOutside = false
-			else
-				-- do zombie functions
-			end
-		else
-			if bot:Team() != TEAM_UNDEAD then
-				if math.random (1, 2) <= 1 then
-					bot.shouldGoOutside = true
-				end
-			else
-				-- do zombie functions
-			end
-		end
-	end
-end
-hook.Add( "SetWaveActive", "BotWaveActive", BotWaveActive )
-
 function vecmeta:QuickDistanceCheck( otherVector, checkType, dist )
 	if checkType == 1 then
 		return self:DistToSqr(otherVector) > (dist * dist)
@@ -242,10 +221,10 @@ function plymeta:BreakableCheck() --Hold the attack button when a func_breakable
 	end
 end
 
-function plymeta:SetBotControlling( b )
+function plymeta:SetBotControlling( controlling )
 	if self:IsBot() then return end
 	
-	if b then
+	if controlling then
 		if !self.IsZSBot2 then
 			print ( "Started bot controlling " .. self:Name() )
 			self:SetBotValues()
@@ -1210,7 +1189,7 @@ function entmeta:FindCadingSpots( centerArea )
 	local westConnectedAreas = centerArea:GetAdjacentAreasAtSide(3)
 	
 	--PrintTable (self.UnCheckableAreas)
-	print ("Checking around " .. tostring(centerArea) .. " for cading spots.")
+	if GetConVar( "zs_bot_debug_defending_spots" ):GetInt() == 1 then print ("Checking around " .. tostring(centerArea) .. " for cading spots.") end
 	
 	if !table.HasValue( self.UnCheckableAreas, centerArea ) then
 		table.insert( self.UnCheckableAreas, centerArea )
@@ -1330,7 +1309,7 @@ function plymeta:SetBotValues()
 	self.lookPos = nil
 	self.lookDistance = 1000
 	self.cJumpDelay = 0
-	self.strafeType = -1 --0 = left, 1 = right, 2 = back
+	self.strafeType = -1 -- 0 = left, 1 = right, 2 = back
 	self.moveType = -1	-- -1 = stop, 0 = f, 1 = fl, 2 = l, 3 = lb, 4 = b, 5 = br, 6 = r, 7 = fr
 	self.shouldGoOutside = false
 	self.onlyFollowPlayers = false
@@ -1341,13 +1320,13 @@ function plymeta:SetBotValues()
 	--[[self.stopVel = 40
 	self.canRaycast = true]]
 	
-	--self.State = 0 --Idle, Hunt, MoveTo, Buy, Hide
+	--self.State = 0 -- Idle, Hunt, MoveTo, Buy, Hide
 	--self.stateName = "NONE"
 	self.Attacking = false
 	self.Task = 0
-	self.Disposition = IGNORE_ENEMIES --ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
+	self.Disposition = IGNORE_ENEMIES -- ENGAGE_AND_INVESTIGATE, OPPORTUNITY_FIRE, SELF_DEFENSE, IGNORE_ENEMIES
 	self.Skill = math.random(0, 100)
-	--self.Morale = 0 --EXCELLENT, GOOD, POSITIVE, NEUTRAL, NEGATIVE, BAD, TERRIBLE
+	--self.Morale = 0 -- EXCELLENT, GOOD, POSITIVE, NEUTRAL, NEGATIVE, BAD, TERRIBLE
 	--self.moraleName = "NONE"
 	self.nearbyFriends = 0
 	self.nearbyEnemies = 0

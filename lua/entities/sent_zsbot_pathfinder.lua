@@ -125,37 +125,37 @@ end
 function ENT:ComputePath (path, pos)
 	path:Compute( self, pos, function( area, fromArea, ladder, elevator, length )
 		if ( !IsValid( fromArea ) ) then
-
+			
 			// first area in path, no cost
 			return 0
-
-		else
-		
-		if ( !self.loco:IsAreaTraversable( area ) ) then
-			// our locomotor says we can't move here
-			return -1
 			
-		end
-
-		// compute distance traveled along path so far
-		local dist = 0
-
-		local cost = dist + fromArea:GetCostSoFar()
-
-		// check height change
-		local deltaZ = fromArea:ComputeAdjacentConnectionHeightChange( area )
-		if ( deltaZ >= self.loco:GetStepHeight() ) then
-			if ( deltaZ >= self.loco:GetMaxJumpHeight() ) then
-				// too high to reach
+		else
+			
+			if ( !self.loco:IsAreaTraversable( area ) ) then
+				// our locomotor says we can't move here
 				return -1
+				
 			end
+			
+			// compute distance traveled along path so far
+			local dist = 0
+			
+			local cost = dist + fromArea:GetCostSoFar()
+			
+			// check height change
+			local deltaZ = fromArea:ComputeAdjacentConnectionHeightChange( area )
+			if ( deltaZ >= self.loco:GetStepHeight() ) then
+				if ( deltaZ >= self.loco:GetMaxJumpHeight() ) then
+					// too high to reach
+					return -1
+				end
 
-			// jumping is slower than flat ground
-			local jumpPenalty = 5
-			cost = cost + jumpPenalty * dist
-		end
-
-		return cost
+				// jumping is slower than flat ground
+				local jumpPenalty = 5
+				cost = cost + jumpPenalty * dist
+			end
+			
+			return cost
 		end
 	end )
 	
