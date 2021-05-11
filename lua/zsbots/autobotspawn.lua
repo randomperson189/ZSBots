@@ -1,4 +1,6 @@
 hook.Add("PlayerInitialSpawn", "ZSPlayerInitialSpawn", function(ply)
+	if engine.ActiveGamemode() != "zombiesurvival" then return end
+	
 	if botsSpawned == nil then
 		botsSpawned = true
 		

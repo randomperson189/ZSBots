@@ -72,7 +72,7 @@ function plymeta:DoSpectateDebugUI()
 	if GetConVar( "zs_bot_debug_spectator" ):GetInt() == 0 then return end
 
 	for i, ply in ipairs(player.GetHumans()) do
-		if ply.FSpectatingEnt == self then
+		if ply.FSpectatingEnt == self or (ply:GetObserverTarget() == self and (ply:GetObserverMode() == OBS_MODE_CHASE or ply:GetObserverMode() == OBS_MODE_IN_EYE)) then
 		
 			local FE = self.Pathfinder
 			local daPos = nil
@@ -1065,62 +1065,6 @@ function FindNearestSniperSpot( thisEnt )
 end
 ----------------------------------------------------------------
 
-function MoveToPosition (bot, position, cmd)
-	local vec = ( position - bot:GetPos() ):GetNormal():Angle().y
-	local myAngle = bot:EyeAngles().y
-	
-	if myAngle > 360 then
-		myAngle = myAngle - 360
-	end
-	if myAngle < 0 then
-		myAngle = myAngle + 360
-	end
-	
-	local angleAround = vec - myAngle
-	
-	if angleAround > 360 then
-		angleAround = angleAround - 360
-	end
-	if angleAround < 0 then
-		angleAround = angleAround + 360
-	end
-	
-	--print ("my eye angles", myAngle, "the angle", vec, "the angle around", angleAround)
-	
-	if angleAround <= 22.5 or angleAround > 337.5 then
-		bot.moveType = 0
-		--print ("Forward")
-	end
-	if angleAround > 22.5 and angleAround <= 67.5 then
-		bot.moveType = 1
-		--print ("Forward Left")
-	end
-	if angleAround > 67.5 and angleAround <= 112.5 then
-		bot.moveType = 2
-		--print ("Left")
-	end
-	if angleAround > 112.5 and angleAround <= 157.5 then
-		bot.moveType = 3
-		--print ("Left Back")
-	end
-	if angleAround > 157.5 and angleAround <= 202.5 then
-		bot.moveType = 4
-		--print ("Back")
-	end
-	if angleAround > 202.5 and angleAround <= 247.5 then
-		bot.moveType = 5
-		--print ("Back Right")
-	end
-	if angleAround > 247.5 and angleAround <= 292.5 then
-		bot.moveType = 6
-		--print ("Right")
-	end
-	if angleAround > 292.5 and angleAround <= 337.5 then
-		bot.moveType = 7
-		--print ("Forward Right")
-	end
-end
-
 function plymeta:GetOtherWeapon(ammoCheck)
 	if ammoCheck == nil then ammoCheck = 0 end
 	
@@ -1641,9 +1585,87 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	end
 	
 	if #bot.Pathfinder.P:GetAllSegments() <= 2 then
-		MoveToPosition(bot, goalPos, cmd)
+		MoveToPosition(bot, goalPos, cmd, lookAtPoint)
 	else
-		MoveToPosition(bot, curgoalPos, cmd)
+		MoveToPosition(bot, curgoalPos, cmd, lookAtPoint)
+	end
+end
+
+function MoveToPosition (bot, position, cmd, lookAtPoint)
+	if !bot:OnGround() and lookAtPoint and bot.prevJumpNav and bot:GetMoveType() == MOVETYPE_WALK then
+		
+		local tempAngle = bot:EyeAngles().y
+		
+		if tempAngle < 0 then
+			tempAngle = tempAngle + 360
+		end
+		
+		local theSum = bot.lookAngle.y - tempAngle
+		
+		if theSum >= 5 then
+			bot.moveType = 2
+			--print("Strafe Left")
+		end
+		if theSum <= -5 then
+			bot.moveType = 6
+			--print("Strafe Right")
+		end
+		
+		return
+	end
+	
+	local vec = ( position - bot:GetPos() ):GetNormal():Angle().y
+	local myAngle = bot:EyeAngles().y
+	
+	if myAngle > 360 then
+		myAngle = myAngle - 360
+	end
+	if myAngle < 0 then
+		myAngle = myAngle + 360
+	end
+	
+	local angleAround = vec - myAngle
+	
+	if angleAround > 360 then
+		angleAround = angleAround - 360
+	end
+	if angleAround < 0 then
+		angleAround = angleAround + 360
+	end
+	
+	--print ("my eye angles", myAngle, "the angle", vec, "the angle around", angleAround)
+	
+	if angleAround <= 22.5 or angleAround > 337.5 then
+		bot.moveType = 0
+		--print ("Forward")
+	end
+	if angleAround > 22.5 and angleAround <= 67.5 then
+		bot.moveType = 1
+		--print ("Forward Left")
+	end
+	if angleAround > 67.5 and angleAround <= 112.5 then
+		bot.moveType = 2
+		--print ("Left")
+	end
+	if angleAround > 112.5 and angleAround <= 157.5 then
+		bot.moveType = 3
+		--print ("Left Back")
+	end
+	if angleAround > 157.5 and angleAround <= 202.5 then
+		bot.moveType = 4
+		--print ("Back")
+	end
+	if angleAround > 202.5 and angleAround <= 247.5 then
+		bot.moveType = 5
+		--print ("Back Right")
+	end
+	if angleAround > 247.5 and angleAround <= 292.5 then
+		bot.moveType = 6
+		--print ("Right")
+	end
+	if angleAround > 292.5 and angleAround <= 337.5 then
+		bot.moveType = 7
+		--print ("Forward Right")
 	end
 end
 

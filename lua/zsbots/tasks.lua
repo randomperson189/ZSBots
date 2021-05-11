@@ -127,7 +127,7 @@ function TaskCheck( bot, cmd, curgoal )
 							end
 						end
 							
-						if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 and IsValid(bot.Pathfinder.TargetArsenal) then
+						if GetConVar( "zs_bot_can_cade" ):GetInt() != 0 and IsValid(bot.Pathfinder.TargetArsenal) and bot.Pathfinder.TargetArsenal.DefendingSpots != nil then
 							if IsValid (bot.Pathfinder.TargetCadingProp) and bot.BuffMuscular and bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
 								if bot:HasWeapon("weapon_zs_hammer") then
 									bot:SetTask( PICKUP_CADING_PROP )
@@ -785,10 +785,12 @@ function TaskCheck( bot, cmd, curgoal )
 				
 				bot:CheckPropPhasing()
 				
-				if bot:GetHolding() == myTarget then
-					--bot.crouchHold = false
-					bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
-					bot:SetTask( MAKE_CADE )
+				if IsValid(bot.Pathfinder.TargetArsenal) then
+					if bot:GetHolding() == myTarget then
+						--bot.crouchHold = false
+						bot.Pathfinder.TargetCadingSpot = table.Random(bot.Pathfinder.TargetArsenal.DefendingSpots)
+						bot:SetTask( MAKE_CADE )
+					end
 				end
 			end
 		end
@@ -1118,6 +1120,12 @@ function TaskCheck( bot, cmd, curgoal )
 								bot:SetTask( MELEE_ZOMBIE )
 							end
 						end
+					end
+					
+					if IsValid (bot.Pathfinder.TargetNailedProp) and !bot.BuffMuscular then
+						if bot:HasWeapon("weapon_zs_hammer") and bot:Health() > (1.5 / 4 * bot:GetMaxHealth()) then
+							bot:SetTask( REPAIR_CADE )
+						end	
 					end
 					
 					bot:LootCheck()
