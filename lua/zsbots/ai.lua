@@ -1,4 +1,4 @@
-hook.Add( "StartCommand", "controlBots", function(bot, cmd)
+hook.Add( "StartCommand", "ControlZSBots", function(bot, cmd)
 	if !bot.IsZSBot2 then return end
 	
 	--==================== START FUNCTIONS ====================
@@ -8,30 +8,10 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 	
 	if !bot:OnGround() then bot.crouchHoldOnce = true end
 	
-	bot:DispositionCheck( cmd, bot.Pathfinder.TargetEnemy )
+	bot:DispositionCheck( cmd, bot.pathFinder.TargetEnemy )
 	
 	CheckNavMeshAttributes( bot, cmd )
 	--morale colour (0, 201, 201)
-	
-	--==================== DEBUGGING ====================
-	
-	bot:DoSpectateDebugUI()
-	
-	if GetConVar( "zs_bot_debug_defending_spots" ):GetInt() == 1 then
-		if IsValid(bot.Pathfinder.TargetArsenal) then
-			if bot.Pathfinder.TargetArsenal.UnCheckableAreas != nil then
-				for i, area in ipairs(bot.Pathfinder.TargetArsenal.UnCheckableAreas) do
-					debugoverlay.Box(vector_origin, area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
-				end
-				
-				for s, spot in ipairs(bot.Pathfinder.TargetArsenal.DefendingSpots) do
-					if bot.Pathfinder.TargetArsenal.DefendingSpots[1] != nil then
-						debugoverlay.Box(vector_origin, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
-					end
-				end
-			end
-		end
-	end
 	
 	--==================== UNUSED THINGS THAT I MIGHT USE ====================
 	
@@ -44,7 +24,7 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 	end
 	--====BESIDE PLAYER====
 	debugoverlay.EntityTextAtPosition(self:EyePos(), -7, "Skill: " .. self.Skill .. "%", 0, Color(255, 255, 255))
-	if IsValid(self.Pathfinder) then
+	if IsValid(self.pathFinder) then
 		debugoverlay.EntityTextAtPosition(self:EyePos(), -6, "Task: " .. self.taskName, 0, Color(0, 255, 0))
 	end
 	debugoverlay.EntityTextAtPosition(self:EyePos(), -5, "Disposition: " .. self.dispositionName, 0, Color(0, 80, 255))
@@ -58,11 +38,11 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 	bot.tangoy = Angle ( 0, bot:EyeAngles().y, bot:EyeAngles().z)
 	debugoverlay.Box( bot:GetPos() + Vector( bot.tangoy:Forward() ) * 25, Vector( -7.5, -7.5, bot:OBBMins().z + 7.5 ), Vector( 7.5, 7.5, bot:OBBMaxs().z - 7.5 ), 0, Color( 255, 255, 255 ) )
 		
-	if IsValid( bot.Pathfinder.TargetLootItem ) then
-		if bot.Pathfinder.TargetLootItem:GetClass() == "prop_weapon" then
-			print (bot.Pathfinder.TargetLootItem:GetWeaponType())
+	if IsValid( bot.pathFinder.TargetLootItem ) then
+		if bot.pathFinder.TargetLootItem:GetClass() == "prop_weapon" then
+			print (bot.pathFinder.TargetLootItem:GetWeaponType())
 		else
-			print (bot.Pathfinder.TargetLootItem)
+			print (bot.pathFinder.TargetLootItem)
 		end
 	end
 	]]
@@ -163,44 +143,44 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 		cmd:SetViewAngles( Angle( lerpAngle.x, lerpAngle.y, 0 ) )
 	end
 	
-	if !IsValid( bot.Pathfinder ) then
-		bot.Pathfinder = ents.Create( "sent_zsbot_pathfinder" )
-		bot.Pathfinder:Spawn()
-		bot.Pathfinder.Bot = bot
+	if !IsValid( bot.pathFinder ) then
+		bot.pathFinder = ents.Create( "sent_zsbot_pathfinder" )
+		bot.pathFinder:Spawn()
+		bot.pathFinder.Bot = bot
 	end
 	
 	--==================== SETUP NAVIGATION ====================
 	
-	if bot.Pathfinder.P then
-		bot.LastPath = bot.Pathfinder.P:GetAllSegments()
+	if bot.pathFinder.P then
+		bot.LastPath = bot.pathFinder.P:GetAllSegments()
 	end
 	
 	if bot.LastPath then
 		local daPos = navmesh.GetNearestNavArea( bot:GetPos(), false, 99999999999, false, false, TEAM_ANY ):GetClosestPointOnArea( bot:GetPos() )
-		if bot.Pathfinder:GetPos() != daPos then
-			bot.Pathfinder:SetPos( daPos )
+		if bot.pathFinder:GetPos() != daPos then
+			bot.pathFinder:SetPos( daPos )
 		end
 	else
-		if bot.Pathfinder:GetPos() != bot:GetPos() then
-			bot.Pathfinder:SetPos( bot:GetPos() )
+		if bot.pathFinder:GetPos() != bot:GetPos() then
+			bot.pathFinder:SetPos( bot:GetPos() )
 		end
 	end
 	
 	if !bot.LastPath then return end 
 	
-	local curgoal = bot.LastPath[bot.Pathfinder.CurSegment]
+	local curgoal = bot.LastPath[bot.pathFinder.CurSegment]
 	if !curgoal then return end
 	
 	if bot:GetMoveType() == MOVETYPE_LADDER then
 		if bot:GetPos():QuickDistanceCheck( curgoal.pos, SMALLER, 20 ) then
-			if bot.LastPath[bot.Pathfinder.CurSegment + 1] != nil then
-				bot.Pathfinder.CurSegment = bot.Pathfinder.CurSegment + 1
+			if bot.LastPath[bot.pathFinder.CurSegment + 1] != nil then
+				bot.pathFinder.CurSegment = bot.pathFinder.CurSegment + 1
 			end
 		end
 	else
 		if Vector( bot:GetPos().x, bot:GetPos().y, 0 ):QuickDistanceCheck( Vector( curgoal.pos.x, curgoal.pos.y, 0 ), SMALLER, 20 ) then
-			if bot.LastPath[bot.Pathfinder.CurSegment + 1] != nil then
-				bot.Pathfinder.CurSegment = bot.Pathfinder.CurSegment + 1
+			if bot.LastPath[bot.pathFinder.CurSegment + 1] != nil then
+				bot.pathFinder.CurSegment = bot.pathFinder.CurSegment + 1
 			end
 		end
 	end
@@ -213,39 +193,39 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 		
 		if bot:Team() == TEAM_UNDEAD then
 			--bot.attackProp = FindNearestProp2( bot )
-			bot.Pathfinder.TargetPosition = FindNearestHidingSpot( bot )
+			bot.pathFinder.TargetPosition = FindNearestHidingSpot( bot )
 			
 			if ROUNDWINNER != bot:Team() then
 				if bot.Task == HIDE_FROM_HUMANS then
-					bot.Pathfinder.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
+					bot.pathFinder.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
 				elseif AnEnemyIsInSight("player", bot) then
-					bot.Pathfinder.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
+					bot.pathFinder.TargetEnemy = FindNearestEnemyInSight( "player", bot, false )
 				else
-					bot.Pathfinder.TargetEnemy = FindNearestEnemy( "player", bot )
+					bot.pathFinder.TargetEnemy = FindNearestEnemy( "player", bot )
 				end
 			else
-				bot.Pathfinder.TargetEnemy = FindNearestTeammate( "player", bot )
+				bot.pathFinder.TargetEnemy = FindNearestTeammate( "player", bot )
 			end
 		else
-			bot.Pathfinder.TargetEnemy = FindNearestEnemyInSight( "player", bot )
-			bot.Pathfinder.TargetNailedProp = FindNearestNailedProp( bot )
-			bot.Pathfinder.TargetCadingProp = FindNearestProp( bot )
-			bot.Pathfinder.TargetLootItem = FindNearestLoot( bot )
-			bot.Pathfinder.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot )
-			bot.Pathfinder.TargetResupply = FindNearestEntity( "prop_resupplybox", bot )
+			bot.pathFinder.TargetEnemy = FindNearestEnemyInSight( "player", bot )
+			bot.pathFinder.TargetNailedProp = FindNearestNailedProp( bot )
+			bot.pathFinder.TargetCadingProp = FindNearestProp( bot )
+			bot.pathFinder.TargetLootItem = FindNearestLoot( bot )
+			bot.pathFinder.TargetArsenal = FindNearestEntity( "prop_arsenalcrate", bot )
+			bot.pathFinder.TargetResupply = FindNearestEntity( "prop_resupplybox", bot )
 			
 			if bot:HasWeapon ("weapon_zs_medicalkit") then
-				bot.Pathfinder.TargetHealing = FindNearestHealTarget( "player", bot )
+				bot.pathFinder.TargetHealing = FindNearestHealTarget( "player", bot )
 			end
 			
 			if bot.Task != 14 then
-				bot.Pathfinder.TargetTeammate = FindNearestTeammate( "player", bot )
+				bot.pathFinder.TargetTeammate = FindNearestTeammate( "player", bot )
 			else
 				if game.IsObj() or GAMEMODE.ZombieEscape then
-					bot.Pathfinder.TargetTeammate = FindNearestPlayerTeammate( "player", bot )
+					bot.pathFinder.TargetTeammate = FindNearestPlayerTeammate( "player", bot )
 				end
 				if !game.IsObj() and !GAMEMODE.ZombieEscape then
-					bot.Pathfinder.TargetTeammate = FindNearestTeammate( "player", bot )
+					bot.pathFinder.TargetTeammate = FindNearestTeammate( "player", bot )
 				end
 			end
 		end
@@ -271,9 +251,9 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 			bot.prevSay = -1
 		end
 		
-		--[[if IsValid (bot.Pathfinder.TargetEnemy) then
-			if bot.Pathfinder.TargetEnemy:Team() == TEAM_UNDEAD then
-				if bot.Pathfinder.TargetEnemy:GetZombieClassTable().Boss and bot.prevSay == -1 then
+		--[[if IsValid (bot.pathFinder.TargetEnemy) then
+			if bot.pathFinder.TargetEnemy:Team() == TEAM_UNDEAD then
+				if bot.pathFinder.TargetEnemy:GetZombieClassTable().Boss and bot.prevSay == -1 then
 					SayPresetMessage(bot, MSG_BOSS_OUTSIDE, true)
 				end
 			end
@@ -287,11 +267,11 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 		local medCooldown = medWeapon:GetNextCharge() - CurTime()
 		
 		if medCooldown <= 0 and medWeapon:GetPrimaryAmmoCount() > 0 then
-			if IsValid (bot.Pathfinder.TargetHealing) then
-				if bot:Health() > bot.Pathfinder.TargetHealing:Health() and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then
+			if IsValid (bot.pathFinder.TargetHealing) then
+				if bot:Health() > bot.pathFinder.TargetHealing:Health() and bot:Health() > (2 / 4 * bot:GetMaxHealth()) then
 					bot:SetTask( HEAL_TEAMMATE )
 				end
-				if bot:Health() <= bot.Pathfinder.TargetHealing:Health() or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) then
+				if bot:Health() <= bot.pathFinder.TargetHealing:Health() or bot:Health() <= (2 / 4 * bot:GetMaxHealth()) then
 					bot:SelectWeapon(medWeapon)
 					
 					bot.attack2Timer = true
@@ -316,8 +296,8 @@ hook.Add( "StartCommand", "controlBots", function(bot, cmd)
 	
 	--==================== END CHECKS ====================
 	
-	if IsValid(bot.Pathfinder.TargetEnemy) then
-		if bot.lookAngle == (bot:AimPoint( bot.Pathfinder.TargetEnemy ) - bot:EyePos()):Angle() then 
+	if IsValid(bot.pathFinder.TargetEnemy) then
+		if bot.lookAngle == (bot:AimPoint( bot.pathFinder.TargetEnemy ) - bot:EyePos()):Angle() then 
 			bot.Attacking = true 
 		else 
 			bot.Attacking = false 
@@ -359,7 +339,7 @@ hook.Add( "PlayerDisconnected", "botDisconnect", function(ply)
 	if !ply.IsZSBot2 then return end
 	
 	--Remove the bots navigator entity so it doesn't cause errors
-	ply.Pathfinder:Remove()
+	ply.pathFinder:Remove()
 end )
 
 hook.Add("PlayerSpawn", "botSpawn", function(ply)

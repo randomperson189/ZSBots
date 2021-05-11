@@ -34,10 +34,6 @@ function ENT:ChasePos( options )
 		if self.P:GetAge() > 1 and self.Bot:Alive() and self.Bot:GetZombieClassTable().Name != "Crow" then			
 			self:NavCheck()
 		end
-	
-		if GetConVar( "zs_bot_debug_path" ):GetInt() == 1 then
-			self.P:Draw()
-		end
 		
 		coroutine.yield()
 	end

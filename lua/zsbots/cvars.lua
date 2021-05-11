@@ -4,9 +4,9 @@
 --CreateConVar( "zs_bot_melee_only", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "If nonzero, ZSBots are forced to use their melee weapon." )
 --CreateConVar( "zs_bot_debug", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Debug ZSBots (developer must be set to 1 in the console to work)." )
 
-CreateConVar( "zs_bot_debug_spectator", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Show the debug menu while spectating ZSBots. (developer must be set to 1 in the console to work and FSpectate is needed)" )
-CreateConVar( "zs_bot_debug_attack", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Debug ZSBots attack detection." )
-CreateConVar( "zs_bot_debug_path", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Debug ZSBots pathfinding." )
+CreateConVar( "zs_bot_debug_spectator", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Show the debug menu while spectating ZSBots, also works with FSpectate. (developer must be set to 1 in the console to work)" )
+CreateConVar( "zs_bot_debug_attack", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Debug Zombie ZSBots attack detection." )
+CreateConVar( "zs_bot_debug_path", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "1 - Show path for all ZSBots, 2 - Show path for only the ZSBot you're spectating" )
 CreateConVar( "zs_bot_debug_defending_spots", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE}, "Debug ZSBots defending spots." )
 
 CreateConVar( "zs_bot_muscular", 0, {FCVAR_SERVER_CAN_EXECUTE, FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If nonzero, ZSBots will always have the muscular trait." )

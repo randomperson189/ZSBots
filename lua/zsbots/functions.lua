@@ -68,124 +68,166 @@ timer.Create("CadingSpotsFinder", 3, 0, function()
 	end
 end)
 
-function plymeta:DoSpectateDebugUI()
-	if GetConVar( "zs_bot_debug_spectator" ):GetInt() == 0 then return end
-
-	for i, ply in ipairs(player.GetHumans()) do
-		if ply.FSpectatingEnt == self or (ply:GetObserverTarget() == self and (ply:GetObserverMode() == OBS_MODE_CHASE or ply:GetObserverMode() == OBS_MODE_IN_EYE)) then
+hook.Add( "StartCommand", "BotDebugUI", function(ply, cmd)
+	if ply:IsBot() then
+		if GetConVar( "zs_bot_debug_path" ):GetInt() == 1 then
+			if ply.IsZSBot2 and ply.pathFinder.P != nil then
+				ply.pathFinder.P:Draw()
+			end
+		end
+	elseif GetConVar( "zs_bot_debug_spectator" ):GetInt() != 0 or GetConVar( "zs_bot_debug_path" ):GetInt() == 2 then
+		local obsTarget = ply:GetObserverTarget()
 		
-			local FE = self.Pathfinder
-			local daPos = nil
-			local daName = nil
-
-			if self.Task == GOTO_ARSENAL then
-				if self:Team() != TEAM_UNDEAD then
-					if IsValid( FE.TargetArsenal ) then
-						daPos = FE.TargetArsenal:GetPos()
-						daName = FE.TargetArsenal
-					end
-				elseif IsValid( FE.TargetEnemy ) then
-					daPos = FE.TargetEnemy:GetPos()
-					daName = FE.TargetEnemy
-				end
-			end
-
-			if self.Task == MELEE_ZOMBIE then
-				if self:Team() != TEAM_UNDEAD then
-					if IsValid( FE.TargetEnemy ) then
-						daPos = FE.TargetEnemy:GetPos()
-						daName = FE.TargetEnemy
-					end
-				elseif FE.TargetPosition != nil then
-					daPos = FE.TargetPosition
-					daName = FE.TargetPosition
-				end
-			end
-
-			if self.Task == FOLLOW then
-				if IsValid( FE.TargetTeammate ) then 
-					daPos = FE.TargetTeammate:GetPos()
-					daName = FE.TargetTeammate
-				end
-			end
-
-			if self.Task == HEAL_TEAMMATE then
-				if IsValid( FE.TargetHealing ) then 
-					daPos = FE.TargetHealing:GetPos()
-					daName = FE.TargetHealing
-				end
-			end
-
-			if FE.TargetPosition != nil then
-				if self.Task == WANDER_AROUND or self.Task == SNIPING then
-					daPos = FE.TargetPosition
-					daName = FE.TargetPosition
-				end
-			end
-
-			if IsValid( FE.TargetNailedProp ) and self.Task == REPAIR_CADE then
-				daPos = FE.TargetNailedProp:GetPos()
-				daName = FE.TargetNailedProp
-			end
-
-			if IsValid( FE.TargetCadingProp ) and self.Task == PICKUP_CADING_PROP then
-				daPos = FE.TargetCadingProp:GetPos()
-				daName = FE.TargetCadingProp
-			end
-
-			if FE.TargetCadingSpot != nil then 
-				if self.Task == MAKE_CADE or self.Task == DEFEND_CADE or self.Task == PLACE_DEPLOYABLE then
-					daPos = FE.TargetCadingSpot
-					daName = FE.TargetCadingSpot
-				end
-			end
-
-			if IsValid( FE.TargetResupply ) and self.Task == RESUPPLY_AMMO then
-				--if self:GetPos():QuickDistanceCheck( FE.TargetResupply:GetPos(), BIGGER, 100 ) then
-					daPos = FE.TargetResupply:GetPos()
-					daName = FE.TargetResupply
-				--end
-			end
-
-			if IsValid( FE.TargetLootItem ) and self.Task == PICKUP_LOOT then
-				daPos = FE.TargetLootItem:GetPos()
-				daName = FE.TargetLootItem
-			end
-			
-			if daPos != nil then debugoverlay.Cross(daPos, 7.5, 0, Color( 255, 255, 0, 255 ), true) end
-			
-			debugoverlay.ScreenText( 0.55, 0.28, "Name: " .. self:Name(), 0, Color(255, 255, 255) )
-			debugoverlay.ScreenText( 0.55, 0.3, "Health: " .. self:Health(), 0, Color(255, 255, 0))
-			
-			if IsValid(self:GetActiveWeapon()) then
-				debugoverlay.ScreenText( 0.55, 0.32, "Weapon: " .. tostring(self:GetActiveWeapon():GetClass()), 0, Color(255, 255, 255) )
+		if IsValid(obsTarget) then
+			if obsTarget.IsZSBot2 and (ply:GetObserverMode() == OBS_MODE_CHASE or ply:GetObserverMode() == OBS_MODE_IN_EYE) then
+				obsTarget:DoSpectateDebugUI()
 				
-				if self:GetActiveWeapon():GetPrimaryAmmoType() != -1 then
-					debugoverlay.ScreenText( 0.55, 0.34, "Ammo: " .. self:GetActiveWeapon():Clip1() .. "/" .. self:GetAmmoCount(self:GetActiveWeapon():GetPrimaryAmmoType()), 0, Color(255, 255, 0))
+				if GetConVar( "zs_bot_debug_path" ):GetInt() == 2 then
+					if IsValid(obsTarget.pathFinder) then
+						if obsTarget.pathFinder.P != nil then
+							obsTarget.pathFinder.P:Draw()
+						end
+					end
 				end
 			end
-			
-			debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. self.Skill .. "%", 0, Color(255, 255, 255))
-			
-			--[[if self:Team() == TEAM_HUMAN and self.Task == PICKUP_LOOT and IsValid(self.Pathfinder.TargetLootItem) then
-				debugoverlay.Box(self.Pathfinder.TargetLootItem:GetPos(), self.Pathfinder.TargetLootItem:OBBMins(), self.Pathfinder.TargetLootItem:OBBMaxs(), 0, Color( 255, 255, 0, 0 ))
-				debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(self.Pathfinder.TargetLootItem), 0, Color(255, 255, 0))
-			end]]
-			
-			if !self.Attacking then
-				debugoverlay.ScreenText( 0.55, 0.4, "Task: " .. self:GetTaskName(), 0, Color(0, 255, 0))
-				debugoverlay.ScreenText( 0.55, 0.42, "Disposition: " .. self:GetDispositionName(), 0, Color(100, 100, 255))
-				if daName != nil then debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(daName), 0, Color(255, 255, 0)) end
-			elseif IsValid(self.Pathfinder.TargetEnemy) then
-				debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. self.Pathfinder.TargetEnemy:Name(), 0, Color(255, 0, 0))
+		end
+		
+		if IsValid(ply.FSpectatingEnt) then
+			if ply.FSpectatingEnt.IsZSBot2 then
+				ply.FSpectatingEnt:DoSpectateDebugUI()
 			end
-			
-			debugoverlay.ScreenText( 0.55, 0.54, "Steady view = " .. "N/A", 0, Color(255, 255, 0))
-			debugoverlay.ScreenText( 0.55, 0.56, "Nearby friends = " .. self.nearbyFriends, 0, Color(102, 254, 100))
-			debugoverlay.ScreenText( 0.55, 0.58, "Nearby enemies = " .. self.nearbyEnemies, 0, Color(254, 100, 100))
-			debugoverlay.ScreenText( 0.55, 0.6, "Nav Area: " .. tostring(navmesh.GetNavArea( self:EyePos(), math.huge )), 0, Color(255, 255, 255))
 		end
 	end
+end )
+
+timer.Create("DebugDefendingSpots", 0, 0, function()
+	if GetConVar( "zs_bot_debug_defending_spots" ):GetInt() != 0 then
+		for _, arsenal in ipairs(ents.FindByClass("prop_arsenalcrate")) do
+			if arsenal.UnCheckableAreas != nil then
+				for i, area in ipairs(arsenal.UnCheckableAreas) do
+					debugoverlay.Box(vector_origin, area:GetCorner( 0 ), area:GetCorner( 2 ), 0, Color( 255, 0, 0, 5 ) )
+				end
+				
+				for s, spot in ipairs(arsenal.DefendingSpots) do
+					if arsenal.DefendingSpots[1] != nil then
+						debugoverlay.Box(vector_origin, navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 0 ), navmesh.GetNearestNavArea( spot, false, 99999999999, false, false, TEAM_ANY ):GetCorner( 2 ), 0, Color( 0, 0, 255, 5 ) )
+					end
+				end
+			end
+		end
+	end
+end)
+
+function plymeta:DoSpectateDebugUI()
+	local daPos = nil
+	local daName = nil
+	
+	if self.Task == GOTO_ARSENAL then
+		if self:Team() != TEAM_UNDEAD then
+			if IsValid( self.pathFinder.TargetArsenal ) then
+				daPos = self.pathFinder.TargetArsenal:GetPos()
+				daName = self.pathFinder.TargetArsenal
+			end
+		elseif IsValid( self.pathFinder.TargetEnemy ) then
+			daPos = self.pathFinder.TargetEnemy:GetPos()
+			daName = self.pathFinder.TargetEnemy
+		end
+	end
+
+	if self.Task == MELEE_ZOMBIE then
+		if self:Team() != TEAM_UNDEAD then
+			if IsValid( self.pathFinder.TargetEnemy ) then
+				daPos = self.pathFinder.TargetEnemy:GetPos()
+				daName = self.pathFinder.TargetEnemy
+			end
+		elseif self.pathFinder.TargetPosition != nil then
+			daPos = self.pathFinder.TargetPosition
+			daName = self.pathFinder.TargetPosition
+		end
+	end
+
+	if self.Task == FOLLOW then
+		if IsValid( self.pathFinder.TargetTeammate ) then 
+			daPos = self.pathFinder.TargetTeammate:GetPos()
+			daName = self.pathFinder.TargetTeammate
+		end
+	end
+
+	if self.Task == HEAL_TEAMMATE then
+		if IsValid( self.pathFinder.TargetHealing ) then 
+			daPos = self.pathFinder.TargetHealing:GetPos()
+			daName = self.pathFinder.TargetHealing
+		end
+	end
+
+	if self.pathFinder.TargetPosition != nil then
+		if self.Task == WANDER_AROUND or self.Task == SNIPING then
+			daPos = self.pathFinder.TargetPosition
+			daName = self.pathFinder.TargetPosition
+		end
+	end
+
+	if IsValid( self.pathFinder.TargetNailedProp ) and self.Task == REPAIR_CADE then
+		daPos = self.pathFinder.TargetNailedProp:GetPos()
+		daName = self.pathFinder.TargetNailedProp
+	end
+
+	if IsValid( self.pathFinder.TargetCadingProp ) and self.Task == PICKUP_CADING_PROP then
+		daPos = self.pathFinder.TargetCadingProp:GetPos()
+		daName = self.pathFinder.TargetCadingProp
+	end
+
+	if self.pathFinder.TargetCadingSpot != nil then 
+		if self.Task == MAKE_CADE or self.Task == DEself.pathFinderND_CADE or self.Task == PLACE_DEPLOYABLE then
+			daPos = self.pathFinder.TargetCadingSpot
+			daName = self.pathFinder.TargetCadingSpot
+		end
+	end
+
+	if IsValid( self.pathFinder.TargetResupply ) and self.Task == RESUPPLY_AMMO then
+		--if self:GetPos():QuickDistanceCheck( self.pathFinder.TargetResupply:GetPos(), BIGGER, 100 ) then
+			daPos = self.pathFinder.TargetResupply:GetPos()
+			daName = self.pathFinder.TargetResupply
+		--end
+	end
+
+	if IsValid( self.pathFinder.TargetLootItem ) and self.Task == PICKUP_LOOT then
+		daPos = self.pathFinder.TargetLootItem:GetPos()
+		daName = self.pathFinder.TargetLootItem
+	end
+	
+	if daPos != nil then debugoverlay.Cross(daPos, 7.5, 0, Color( 255, 255, 0, 255 ), true) end
+	
+	debugoverlay.ScreenText( 0.55, 0.28, "Name: " .. self:Name(), 0, Color(255, 255, 255) )
+	debugoverlay.ScreenText( 0.55, 0.3, "Health: " .. self:Health(), 0, Color(255, 255, 0))
+	
+	if IsValid(self:GetActiveWeapon()) then
+		debugoverlay.ScreenText( 0.55, 0.32, "Weapon: " .. tostring(self:GetActiveWeapon():GetClass()), 0, Color(255, 255, 255) )
+		
+		if self:GetActiveWeapon():GetPrimaryAmmoType() != -1 then
+			debugoverlay.ScreenText( 0.55, 0.34, "Ammo: " .. self:GetActiveWeapon():Clip1() .. "/" .. self:GetAmmoCount(self:GetActiveWeapon():GetPrimaryAmmoType()), 0, Color(255, 255, 0))
+		end
+	end
+	
+	debugoverlay.ScreenText( 0.55, 0.38, "Skill: " .. self.Skill .. "%", 0, Color(255, 255, 255))
+	
+	--[[if self:Team() == TEAM_HUMAN and self.Task == PICKUP_LOOT and IsValid(self.pathFinder.TargetLootItem) then
+		debugoverlay.Box(self.pathFinder.TargetLootItem:GetPos(), self.pathFinder.TargetLootItem:OBBMins(), self.pathFinder.TargetLootItem:OBBMaxs(), 0, Color( 255, 255, 0, 0 ))
+		debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(self.pathFinder.TargetLootItem), 0, Color(255, 255, 0))
+	end]]
+	
+	if !self.Attacking then
+		debugoverlay.ScreenText( 0.55, 0.4, "Task: " .. self:GetTaskName(), 0, Color(0, 255, 0))
+		debugoverlay.ScreenText( 0.55, 0.42, "Disposition: " .. self:GetDispositionName(), 0, Color(100, 100, 255))
+		if daName != nil then debugoverlay.ScreenText( 0.55, 0.44, "Target: " .. tostring(daName), 0, Color(255, 255, 0)) end
+	elseif IsValid(self.pathFinder.TargetEnemy) then
+		debugoverlay.ScreenText( 0.55, 0.4, "ATTACKING: " .. self.pathFinder.TargetEnemy:Name(), 0, Color(255, 0, 0))
+	end
+	
+	debugoverlay.ScreenText( 0.55, 0.54, "Steady view = " .. "N/A", 0, Color(255, 255, 0))
+	debugoverlay.ScreenText( 0.55, 0.56, "Nearby friends = " .. self.nearbyFriends, 0, Color(102, 254, 100))
+	debugoverlay.ScreenText( 0.55, 0.58, "Nearby enemies = " .. self.nearbyEnemies, 0, Color(254, 100, 100))
+	debugoverlay.ScreenText( 0.55, 0.6, "Nav Area: " .. tostring(navmesh.GetNavArea( self:EyePos(), math.huge )), 0, Color(255, 255, 255))
 end
 
 function vecmeta:QuickDistanceCheck( otherVector, checkType, dist )
@@ -235,7 +277,7 @@ function plymeta:SetBotControlling( controlling )
 		if self.IsZSBot2 then
 			print ( "Stopped bot controlling " .. self:Name() )
 			self.IsZSBot2 = false
-			if IsValid(self.Pathfinder) then self.Pathfinder:Remove() end
+			if IsValid(self.pathFinder) then self.pathFinder:Remove() end
 		end
 	end
 end
@@ -243,7 +285,7 @@ end
 function plymeta:SetTask( task )
 	self.Task = task
 	
-	if IsValid(self.Pathfinder) then self.Pathfinder:NavCheck() end
+	if IsValid(self.pathFinder) then self.pathFinder:NavCheck() end
 end
 
 function plymeta:SetLookAt( position )
@@ -255,15 +297,15 @@ function plymeta:DispositionCheck( cmd, enemy )
 	
 	local tr = util.TraceLine( {
 		start = self:EyePos(),
-		endpos = self:AimPoint( self.Pathfinder.TargetEnemy ),
+		endpos = self:AimPoint( self.pathFinder.TargetEnemy ),
 		mask = MASK_SHOT,
-		filter = function( ent ) if ( ent != self.Pathfinder.TargetEnemy and ent != self and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
+		filter = function( ent ) if ( ent != self.pathFinder.TargetEnemy and ent != self and !ent:IsPlayer() and !string.find(ent:GetClass(), "prop_physics") and !string.find(ent:GetClass(), "func_breakable") ) then return true end end
 	} )
 	
 	if self.Disposition == ENGAGE_AND_INVESTIGATE then --ENGAGE_AND_INVESTIGATE
-		if self:GetPos():QuickDistanceCheck( self.Pathfinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
+		if self:GetPos():QuickDistanceCheck( self.pathFinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
-				self:SetLookAt(self:AimPoint( self.Pathfinder.TargetEnemy ))
+				self:SetLookAt(self:AimPoint( self.pathFinder.TargetEnemy ))
 				
 				self:ShootAtTarget()
 			end
@@ -271,9 +313,9 @@ function plymeta:DispositionCheck( cmd, enemy )
 			
 		end
 	elseif self.Disposition == OPPORTUNITY_FIRE then --OPPORTUNITY_FIRE
-		if self:GetPos():QuickDistanceCheck( self.Pathfinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
+		if self:GetPos():QuickDistanceCheck( self.pathFinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, self.lookDistance ) then
 			if !tr.Hit then
-				self:SetLookAt(self:AimPoint( self.Pathfinder.TargetEnemy ))
+				self:SetLookAt(self:AimPoint( self.pathFinder.TargetEnemy ))
 				
 				if self.Skill > 25 and IsValid(self:GetActiveWeapon()) then
 					if self:GetActiveWeapon():GetNextSecondaryFire() <= CurTime() then
@@ -679,7 +721,7 @@ function SayPresetMessage(bot, category, teamOnly)
 		botSay(message)
 	elseif category == 1 then
 		--Boss outside messages
-		local msgs = {bot.Pathfinder.TargetEnemy:GetZombieClassTable().Name .. " outside.", bot.Pathfinder.TargetEnemy:GetZombieClassTable().Name .. " is outside the cade."}
+		local msgs = {bot.pathFinder.TargetEnemy:GetZombieClassTable().Name .. " outside.", bot.pathFinder.TargetEnemy:GetZombieClassTable().Name .. " is outside the cade."}
 		local message = msgs[math.random(1, #msgs)]
 		
 		botSay(message)
@@ -1240,10 +1282,10 @@ function plymeta:SetBotValues()
 	--self.rotationTimer = 0
 	
 	--BOT NAVIGATOR
-	if !IsValid(self.Pathfinder) then
-		self.Pathfinder = ents.Create( "sent_zsbot_pathfinder" )
-		self.Pathfinder:Spawn()
-		self.Pathfinder.Bot = self
+	if !IsValid(self.pathFinder) then
+		self.pathFinder = ents.Create( "sent_zsbot_pathfinder" )
+		self.pathFinder:Spawn()
+		self.pathFinder.Bot = self
 	end
 	
 	--OTHER STUFF
@@ -1360,17 +1402,17 @@ function plymeta:LootCheck()
 	
 	if self.giveUpTimer > 0 then self.giveUpTimer = self.giveUpTimer - FrameTime() end
 	
-	if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 and IsValid( self.Pathfinder.TargetLootItem ) and !IsValid( self.Pathfinder.TargetEnemy ) and self.giveUpTimer <= 0 then
+	if GetConVar( "zs_bot_can_pick_up_loot" ):GetInt() != 0 and IsValid( self.pathFinder.TargetLootItem ) and !IsValid( self.pathFinder.TargetEnemy ) and self.giveUpTimer <= 0 then
 		local lootTrace = util.TraceLine( {
 			start = self:EyePos(),
-			endpos = self.Pathfinder.TargetLootItem:LocalToWorld(self.Pathfinder.TargetLootItem:OBBCenter()),
+			endpos = self.pathFinder.TargetLootItem:LocalToWorld(self.pathFinder.TargetLootItem:OBBCenter()),
 			mask = MASK_SHOT,
-			filter = function( ent ) if ( ent != self.Pathfinder.TargetLootItem and !ent:IsPlayer() ) then return true end end
+			filter = function( ent ) if ( ent != self.pathFinder.TargetLootItem and !ent:IsPlayer() ) then return true end end
 		} )
 		
-		--debugoverlay.Line( self:EyePos(), self.Pathfinder.TargetLootItem:LocalToWorld(self.Pathfinder.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
+		--debugoverlay.Line( self:EyePos(), self.pathFinder.TargetLootItem:LocalToWorld(self.pathFinder.TargetLootItem:OBBCenter()), 0, Color( 255, 255, 255 ), false )
 		
-		--if IsValid (self.Pathfinder.TargetEnemy) then
+		--if IsValid (self.pathFinder.TargetEnemy) then
 			if !lootTrace.Hit then
 				self.giveUpTimer = math.Rand(5, 7)
 				self:SetTask( PICKUP_LOOT )
@@ -1384,11 +1426,11 @@ function plymeta:LootCheck()
 end
 
 function plymeta:RunAwayCheck( cmd )
-	if IsValid (self.Pathfinder.TargetEnemy) then
+	if IsValid (self.pathFinder.TargetEnemy) then
 		self.b = true
 		
 		if self.runAwayTimer <= 0 then
-			if self:GetPos():QuickDistanceCheck( self.Pathfinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, 150 ) then
+			if self:GetPos():QuickDistanceCheck( self.pathFinder.TargetEnemy:GetPos(), SMALLER_OR_EQUAL, 150 ) then
 				self.runAwayTimer = math.random(1, 3)
 			end
 		elseif self.Skill > 50 then
@@ -1428,11 +1470,11 @@ function plymeta:ShootAtTarget()
 	local skillSteadyShoot = math.Remap( self.Skill, 0, 100, 25, 10 )
 	
 	local th = util.TraceHull( {
-		start = self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.Pathfinder.TargetEnemy )),
+		start = self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.pathFinder.TargetEnemy )),
 		mins = Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ),
 		maxs = Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ),
 		ignoreworld = true,
-		filter = function( ent ) if ( ent == self.Pathfinder.TargetEnemy ) then return true end end
+		filter = function( ent ) if ( ent == self.pathFinder.TargetEnemy ) then return true end end
 	} )
 	
 	local colour = Color( 255, 0, 0, 0)
@@ -1442,7 +1484,7 @@ function plymeta:ShootAtTarget()
 		colour = Color( 0, 255, 0, 0)
 	end
 	
-	if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.Pathfinder.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour ) end
+	if GetConVar( "zs_bot_debug_attack" ):GetInt() == 1 then debugoverlay.Box( self:EyePos() + self:EyeAngles():Forward() * self:EyePos():Distance(self:AimPoint( self.pathFinder.TargetEnemy )), Vector( -skillSteadyShoot, -skillSteadyShoot, -skillSteadyShoot ), Vector( skillSteadyShoot, skillSteadyShoot, skillSteadyShoot ), 0, colour ) end
 end
 
 function plymeta:AimPoint( target )
@@ -1550,15 +1592,15 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 		crouchJump = true
 	end
 	
-	if !IsValid( bot.Pathfinder.P ) then return end
+	if !IsValid( bot.pathFinder.P ) then return end
 	
 	if bot.moveBack then
 		bot.moveType = 4
 		return
 	end
 	
-	if IsValid(bot.Pathfinder.TargetEnemy) then
-		if bot.lookAngle == (bot:AimPoint( bot.Pathfinder.TargetEnemy ) - bot:EyePos()):Angle() then 
+	if IsValid(bot.pathFinder.TargetEnemy) then
+		if bot.lookAngle == (bot:AimPoint( bot.pathFinder.TargetEnemy ) - bot:EyePos()):Angle() then 
 			lookAtPoint = false
 		end
 	end
@@ -1577,14 +1619,14 @@ function CloseToPointCheck( bot, curgoalPos, goalPos, cmd, lookAtPoint, crouchJu
 	end
 	
 	if lookAtPoint then
-		if #bot.Pathfinder.P:GetAllSegments() <= 2 then
+		if #bot.pathFinder.P:GetAllSegments() <= 2 then
 			bot:LookatPosXY( cmd, goalPos )
 		else
 			bot:LookatPosXY(cmd, curgoalPos )
 		end
 	end
 	
-	if #bot.Pathfinder.P:GetAllSegments() <= 2 then
+	if #bot.pathFinder.P:GetAllSegments() <= 2 then
 		MoveToPosition(bot, goalPos, cmd, lookAtPoint)
 	else
 		MoveToPosition(bot, curgoalPos, cmd, lookAtPoint)
