@@ -178,7 +178,7 @@ function plymeta:DoSpectateDebugUI()
 	end
 
 	if self.pathFinder.TargetCadingSpot != nil then 
-		if self.Task == MAKE_CADE or self.Task == DEself.pathFinderND_CADE or self.Task == PLACE_DEPLOYABLE then
+		if self.Task == MAKE_CADE or self.Task == DEFEND_CADE or self.Task == PLACE_DEPLOYABLE then
 			daPos = self.pathFinder.TargetCadingSpot
 			daName = self.pathFinder.TargetCadingSpot
 		end
